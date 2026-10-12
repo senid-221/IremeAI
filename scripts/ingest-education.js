@@ -84,32 +84,49 @@ async function fetchPage(url) {
     const buffer = Buffer.from(await response.arrayBuffer())
     if (buffer.length > 25 * 1024 * 1024) throw new Error('PDF exceeds 25 MB safety limit')
     const parsed = await pdfParse(buffer)
-    const text = String(parsed.text || '').replace(/[ \\t]+/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 150000)
+    const text = String(parsed.text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 150000)
     return { url: finalUrl, title: String(parsed.info?.Title || finalUrl.split('/').pop() || 'Official PDF').slice(0, 240), text, links: [], language: 'en' }
   }
   if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type)
   const html = await response.text()
   const text = cleanHtml(html).slice(0, 60000)
-  const links = [...html.matchAll(/href\\s*=\\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
+  const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
   return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en' }
+}
+function inferMetadata(source, page) {
+  const label = (page.title + ' ' + page.url.split('/').pop()).replace(/[_-]+/g, ' ').toUpperCase()
+  const grade = label.match(/\\b(P[1-6]|S[1-6]|N[1-3])\\b/)
+  const tvet = label.match(/\\b(?:TVET\\s*)?(?:LEVEL|L)\\s*([1-5])\\b/)
+  const subjects = [
+    ['Mathematics', /\\b(MATHEMATICS|MATHS?)\\b/], ['Kinyarwanda', /\\bKINYARWANDA\\b/], ['English', /\\bENGLISH\\b/],
+    ['French', /\\bFRENCH\\b/], ['Kiswahili', /\\b(KISWAHILI|SWAHILI)\\b/], ['Physics', /\\bPHYSICS\\b/],
+    ['Chemistry', /\\bCHEMISTRY\\b/], ['Biology', /\\bBIOLOGY\\b/], ['Science and Technology', /\\b(SCIENCE|SET)\\b/],
+    ['Social Studies', /\\b(SOCIAL STUDIES|SST)\\b/], ['Geography', /\\bGEOGRAPHY\\b/], ['History', /\\bHISTORY\\b/],
+    ['Entrepreneurship', /\\b(ENTREPRENEURSHIP|BUSINESS)\\b/], ['ICT', /\\b(ICT|INFORMATION TECHNOLOGY)\\b/],
+    ['Computer Science', /\\b(COMPUTER SCIENCE|COMPUTING|CODING)\\b/], ['Agriculture', /\\b(AGRICULTURE|AGRIC)\\b/],
+    ['Fine Art', /\\b(FINE ART|ART AND CRAFT|CREATIVE ARTS)\\b/], ['Music', /\\bMUSIC\\b/],
+  ]
+  const subject = subjects.find(([, pattern]) => pattern.test(label))?.[0] || null
+  return { level: grade?.[1] || (tvet ? 'TVET Level ' + tvet[1] : source.level), subject }
 }
 async function savePage(source, page) {
   if (page.text.length < 250) { skipped++; return }
+  const metadata = inferMetadata(source, page)
   const doc = await pool.query(
-    `INSERT INTO education_documents(title,publisher,document_type,education_level,source_url,file_url,is_official,verification_status,language)
-     VALUES($1,$2,$3,$4,$5,$5,true,'verified','en')
-     ON CONFLICT(publisher,title,source_url) DO UPDATE SET education_level=EXCLUDED.education_level,updated_at=now()
+    `INSERT INTO education_documents(title,publisher,document_type,education_level,subject_name,source_url,file_url,is_official,verification_status,language)
+     VALUES($1,$2,$3,$4,$5,$6,$6,true,'verified','en')
+     ON CONFLICT(publisher,title,source_url) DO UPDATE SET education_level=EXCLUDED.education_level,subject_name=EXCLUDED.subject_name,updated_at=now()
      RETURNING id`,
-    [page.title || source.title, source.publisher, source.type, source.level, page.url],
+    [page.title || source.title, source.publisher, source.type, metadata.level, metadata.subject, page.url],
   )
   const documentId = doc.rows[0].id
   const chunks = splitChunks(page.text)
   for (let i = 0; i < chunks.length; i++) {
     await pool.query(
-      `INSERT INTO education_document_chunks(document_id,chunk_index,heading,content,language,grade_level)
-       VALUES($1,$2,$3,$4,'en',$5)
-       ON CONFLICT(document_id,chunk_index) DO UPDATE SET heading=EXCLUDED.heading,content=EXCLUDED.content,grade_level=EXCLUDED.grade_level`,
-      [documentId, i, page.title, chunks[i], source.level],
+      `INSERT INTO education_document_chunks(document_id,chunk_index,heading,content,language,grade_level,subject_name)
+       VALUES($1,$2,$3,$4,'en',$5,$6)
+       ON CONFLICT(document_id,chunk_index) DO UPDATE SET heading=EXCLUDED.heading,content=EXCLUDED.content,grade_level=EXCLUDED.grade_level,subject_name=EXCLUDED.subject_name`,
+      [documentId, i, page.title, chunks[i], metadata.level, metadata.subject],
     )
   }
   stored += chunks.length
