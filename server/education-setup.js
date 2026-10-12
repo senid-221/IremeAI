@@ -94,8 +94,16 @@ function runIngestion() {
     }
     child.stdout.on('data', capture)
     child.stderr.on('data', capture)
-    child.on('error', reject)
+    const timeout = setTimeout(() => {
+      child.kill('SIGTERM')
+      reject(new Error('Education ingestion exceeded the 10-minute safety limit. Rerun with lower EDU_INGEST_MAX_PAGES / EDU_INGEST_MAX_CHARS or review hosting limits.'))
+    }, 10 * 60 * 1000)
+    child.on('error', error => {
+      clearTimeout(timeout)
+      reject(error)
+    })
     child.on('close', code => {
+      clearTimeout(timeout)
       if (code === 0) resolve()
       else reject(new Error('Education ingestion exited with code ' + code + '. ' + output.slice(-1200)))
     })
