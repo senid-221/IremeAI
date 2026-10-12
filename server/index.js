@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { configureAuth, requireRole } from './auth.js'
 
 const app = express()
 const port = Number(process.env.PORT || 8787)
@@ -40,13 +41,24 @@ app.use('/api', (req, res, next) => {
   next()
 })
 
+const auth = configureAuth(app)
+
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'ireme-education-agent',
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    authConfigured: auth.configured,
     timestamp: new Date().toISOString(),
   })
+})
+
+app.get('/api/teacher/overview', requireRole('teacher', 'school_admin', 'platform_admin'), (_req, res) => {
+  res.json({ portal: 'teacher', message: 'Teacher access verified. Classroom tools are the next implementation step.' })
+})
+
+app.get('/api/admin/overview', requireRole('school_admin', 'platform_admin'), (_req, res) => {
+  res.json({ portal: 'admin', message: 'Administrator access verified. School management tools are the next implementation step.' })
 })
 
 app.post('/api/ask', async (req, res) => {
