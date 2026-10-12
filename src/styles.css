@@ -87,3 +87,37 @@
 
 /* Ireme brand, motion and accessibility */
 .brand-mark{background:#fff!important;box-shadow:none!important;overflow:hidden;border-radius:10px!important}.brand-mark img{width:100%;height:100%;object-fit:contain}.nav-item,.panel,.stat-card,.subject-card,.resource-card,.button,.icon-button,.language-switch{transition:transform .22s ease,box-shadow .22s ease,background-color .22s ease,border-color .22s ease}.panel:hover,.resource-card:hover{box-shadow:0 12px 32px #102d5a0d}.button:active,.icon-button:active{transform:scale(.97)}.main-nav .nav-item{animation:ireme-enter .35s both}.main-nav .nav-item:nth-child(2){animation-delay:.035s}.main-nav .nav-item:nth-child(3){animation-delay:.07s}.main-nav .nav-item:nth-child(4){animation-delay:.105s}.main-nav .nav-item:nth-child(5){animation-delay:.14s}.brand-mark img{animation:ireme-mark-in .55s cubic-bezier(.2,.8,.2,1) both}@keyframes ireme-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}@keyframes ireme-mark-in{from{opacity:0;transform:scale(.8) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* Ireme reference UI: crisp blue/yellow, compact cards, real iconography */
+:root{--ireme-blue:#0756b8;--ireme-navy:#062653;--ireme-yellow:#ffc400}
+.app-shell{background:#f5f8fc}
+.sidebar{background:linear-gradient(180deg,#05244f 0%,#062c60 100%);color:#fff}
+.brand-mark{background:transparent!important;width:66px!important;height:66px!important;box-shadow:none!important}
+.brand-mark img{object-fit:contain}
+.brand-copy strong{color:#fff}
+.brand-copy strong span{color:var(--ireme-yellow)}
+.nav-item.active{background:linear-gradient(100deg,#0968e8,#0756b8);box-shadow:0 8px 20px #001e4a30}
+.main-area{background:#f6f9fd}
+.topbar{background:#fff;border-bottom:1px solid #e8eef7}
+.hero-banner{background:linear-gradient(112deg,#06306a 0%,#052451 64%,#0756b8 100%);border-radius:16px;min-height:205px;overflow:hidden;position:relative;box-shadow:0 12px 28px #06265312}
+.hero-banner:after{content:"";position:absolute;right:-60px;top:-100px;width:180px;height:420px;background:linear-gradient(90deg,#ffb900,#ffdb4a);transform:rotate(26deg);opacity:.96;pointer-events:none}
+.hero-copy{position:relative;z-index:2}
+.hero-copy h2{font-size:clamp(24px,3vw,36px);color:#fff}
+.hero-copy>p{color:#e4efff}
+.hero-pill{background:#ffffff17;color:#fff;border:1px solid #ffffff30}
+.hero-art.brand-hero-art{position:absolute;right:0;top:0;bottom:0;width:54%;z-index:1;display:flex;align-items:center;justify-content:center;gap:16px;padding:20px 30px;background:radial-gradient(ellipse at 60% 45%,#0b4c99 0%,#052451 68%);border-radius:0 16px 16px 0}
+.hero-brand-logo{width:clamp(90px,13vw,170px);height:auto;max-height:155px;object-fit:contain;background:#fff;border-radius:14px;padding:7px}
+.hero-brand-copy{display:flex;flex-direction:column;gap:8px;color:#fff;max-width:290px}
+.hero-brand-copy b{font-size:clamp(19px,2vw,30px);line-height:1.15}
+.hero-brand-copy span{font-size:14px;color:#e0edff}
+.hero-book-icons{display:flex;gap:14px;position:absolute;bottom:14px;right:24px;color:#fff9}
+.stats-grid{gap:14px}
+.stat-card,.panel,.resource-card,.learning-card{border:1px solid #eaf0f8;border-radius:16px;box-shadow:0 5px 20px #0b39750a;background:#fff}
+.stat-card:hover,.resource-card:hover,.learning-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px #0b397516}
+.ask-panel{border-radius:18px}
+.button-primary{background:#075ff0}
+.button-primary:hover{background:#064fca}
+.button-white{color:#0756b8}
+.footer{border-top:1px solid #e8eef7}
+@media(max-width:900px){.hero-banner{min-height:250px}.hero-art.brand-hero-art{width:42%;padding:14px}.hero-brand-logo{width:78px}.hero-book-icons{display:none}.hero-brand-copy b{font-size:18px}.hero-brand-copy span{font-size:12px}}
+@media(max-width:640px){.hero-banner{min-height:230px}.hero-copy{max-width:100%;padding-right:0}.hero-art.brand-hero-art{position:relative;inset:auto;width:100%;min-height:100px;border-radius:0 0 16px 16px;justify-content:flex-start;padding:12px 18px}.hero-brand-logo{width:74px;max-height:74px}.hero-brand-copy b{font-size:18px}.hero-banner:after{right:-110px;top:100px;width:80px;height:220px}.hero-actions{flex-wrap:wrap}}
