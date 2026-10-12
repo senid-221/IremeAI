@@ -237,3 +237,11 @@ body,.main-area{color:#000}
   .welcome-row p,.page-heading p,.hero-copy p{color:#000}
   .hero-copy p,.hero-copy h2,.hero-pill,.hero-trust,.hero-brand-copy,.hero-brand-copy span{color:#fff}
 }
+
+
+/* Replace the custom illustrated mark with consistent Lucide React icons. */
+.brand-mark{display:grid!important;place-items:center!important;background:#fff!important;border:1px solid #dbeafe!important;border-radius:12px!important;overflow:visible!important}
+.brand-mark-icon{color:#0756b8;flex-shrink:0}
+.hero-brand-logo{display:block;color:#0756b8;background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:10px;box-sizing:content-box;flex-shrink:0}
+.ask-logo{color:#fff}
+.ask-logo img,.answer-avatar img{display:none}
