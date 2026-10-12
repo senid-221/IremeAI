@@ -49,3 +49,28 @@ test('ask endpoint gives a safe configuration error when no key is set', async (
   assert.equal(body.code, 'AI_NOT_CONFIGURED')
   assert.match(body.error, /OPENAI_API_KEY/)
 })
+
+test('account endpoints fail safely when PostgreSQL and session secret are not configured', async () => {
+  const response = await fetch(baseUrl + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fullName: 'Test Student', email: 'student@example.com', password: 'safe-test-password-123' }),
+  })
+  const body = await response.json()
+  assert.equal(response.status, 503)
+  assert.equal(body.code, 'AUTH_NOT_CONFIGURED')
+})
+
+test('teacher portal rejects unauthenticated requests', async () => {
+  const response = await fetch(baseUrl + '/api/teacher/overview')
+  const body = await response.json()
+  assert.equal(response.status, 401)
+  assert.match(body.error, /sign in/i)
+})
+
+test('admin portal rejects unauthenticated requests', async () => {
+  const response = await fetch(baseUrl + '/api/admin/overview')
+  const body = await response.json()
+  assert.equal(response.status, 401)
+  assert.match(body.error, /sign in/i)
+})
