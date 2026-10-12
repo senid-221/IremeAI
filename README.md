@@ -154,6 +154,14 @@ See `.env.example`. Do not commit real API keys, database credentials, or secret
 5. Add a controlled admin bootstrap/invitation workflow and production-grade abuse monitoring.
 6. Add end-to-end verification, deployment checks, and privacy/data-retention controls.
 
+## Run database setup from Hostinger hPanel (no terminal)
+
+After the Node.js app deploys, add a unique `EDUCATION_SETUP_SECRET` of at least 32 characters to the Hostinger Node.js app environment variables, alongside the existing `DATABASE_URL`. Do not commit the real secret or share it in chat. Restart/redeploy the app so the variable is loaded.
+
+Then open `https://YOUR-DOMAIN/education-setup` over HTTPS, enter the secret, and choose **Apply migrations and start ingestion**. The protected server tool applies migrations 001–004 in order (it skips migration 001 if the core `users` table already exists), verifies the knowledge-base tables, then starts the existing bounded REB/NESA/RTB HTML and text-PDF indexer. Use the status button to inspect progress and any safe error message. The setup secret is checked server-side and never placed in the URL.
+
+Run this once at a time. Keep the page private and remove `EDUCATION_SETUP_SECRET` from Hostinger after setup finishes. If migration 001 previously failed part-way, or the database contains an incomplete/legacy schema, stop and have the schema reviewed rather than repeatedly rerunning setup. This tool does not use OCR, cannot access login-protected resources, and does not guarantee all grade/subject/topic/lesson documents are imported. Review actual search results after ingestion.
+
 ## Importing official Rwanda education content
 
 The first-stage official-source indexer is available as `npm run ingest:education`. It reads accessible HTML pages and text-extractable PDFs from an allowlist of REB, NESA and RTB domains, extracts text, attempts to infer grade/subject metadata from document titles and identify likely topic/lesson headings within each text chunk, and stores searchable chunks in the PostgreSQL tables created by migration 004. Configure `DATABASE_URL` and apply migrations 001–004 before running it. Optional safety limits are `EDU_INGEST_MAX_PAGES` (default 40, max 200) and `EDU_INGEST_MAX_CHARS` (default 1,500,000, max 5,000,000).
