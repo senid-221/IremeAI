@@ -348,7 +348,24 @@ app.use((error, _req, res, _next) => {
 export default app
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, () => {
-    console.log('Ireme AI server listening on port ' + port)
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`Ireme AI server listening on 0.0.0.0:${port}`)
+    console.log(`Production mode: ${process.env.NODE_ENV === 'production'}`)
+    console.log(`AI credentials configured: ${Boolean(process.env.OPENAI_API_KEY)}`)
+    console.log(`Authentication configured: ${Boolean(process.env.DATABASE_URL && process.env.SESSION_SECRET)}`)
+    console.log(`Frontend build found: ${Boolean(requireDistIndex())}`)
   })
+
+  server.on('error', error => {
+    console.error('Ireme AI failed to start:', error?.message || error)
+    process.exitCode = 1
+  })
+}
+
+function requireDistIndex() {
+  try {
+    return import.meta.resolve('../dist/index.html')
+  } catch {
+    return null
+  }
 }
