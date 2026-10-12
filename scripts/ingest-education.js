@@ -96,7 +96,7 @@ async function fetchPage(url) {
 function inferMetadata(source, page) {
   const label = (page.title + ' ' + page.url.split('/').pop()).replace(/[_-]+/g, ' ').toUpperCase()
   const grade = label.match(/\b(P[1-6]|S[1-6]|N[1-3])\b/)
-  const tvet = label.match(/\b(?:TVET\\s*)?(?:LEVEL|L)\\s*([1-5])\b/)
+  const tvet = label.match(/\b(?:TVET\s*)?(?:LEVEL|L)\s*([1-5])\b/)
   const subjects = [
     ['Mathematics', /\b(MATHEMATICS|MATHS?)\b/], ['Kinyarwanda', /\bKINYARWANDA\b/], ['English', /\bENGLISH\b/],
     ['French', /\bFRENCH\b/], ['Kiswahili', /\b(KISWAHILI|SWAHILI)\b/], ['Physics', /\bPHYSICS\b/],
@@ -109,6 +109,15 @@ function inferMetadata(source, page) {
   const subject = subjects.find(([, pattern]) => pattern.test(label))?.[0] || null
   return { level: grade?.[1] || (tvet ? 'TVET Level ' + tvet[1] : source.level), subject }
 }
+function inferTopic(chunk, fallbackTitle) {
+  const lines = chunk.split(/\n+/).map(line => line.trim()).filter(line => line.length >= 4 && line.length <= 160)
+  const heading = lines.find(line =>
+    /^(unit|topic|lesson|chapter|module|competence|learning outcome|activity|week|section)\s*[:\-\d.]?/i.test(line) ||
+    (/^[A-Z][A-Za-z0-9 ,:()'’&/-]{4,100}$/.test(line) && line.split(/\s+/).length <= 12)
+  )
+  return (heading || fallbackTitle || 'Learning content').slice(0, 160)
+}
+
 async function savePage(source, page) {
   if (page.text.length < 250) { skipped++; return }
   const metadata = inferMetadata(source, page)
@@ -122,11 +131,12 @@ async function savePage(source, page) {
   const documentId = doc.rows[0].id
   const chunks = splitChunks(page.text)
   for (let i = 0; i < chunks.length; i++) {
+    const topic = inferTopic(chunks[i], page.title)
     await pool.query(
       `INSERT INTO education_document_chunks(document_id,chunk_index,heading,content,language,grade_level,subject_name)
        VALUES($1,$2,$3,$4,'en',$5,$6)
        ON CONFLICT(document_id,chunk_index) DO UPDATE SET heading=EXCLUDED.heading,content=EXCLUDED.content,grade_level=EXCLUDED.grade_level,subject_name=EXCLUDED.subject_name`,
-      [documentId, i, page.title, chunks[i], metadata.level, metadata.subject],
+      [documentId, i, topic, chunks[i], metadata.level, metadata.subject],
     )
   }
   stored += chunks.length
@@ -134,7 +144,7 @@ async function savePage(source, page) {
 async function main() {
   const client = await pool.connect()
   client.release()
-  console.log('Ireme AI official-source HTML indexing started.')
+  console.log('Ireme AI official-source HTML/PDF indexing started.')
   console.log('Limit:', MAX_PAGES, 'pages; maximum extracted text:', MAX_CHARS, 'characters.')
   try {
     for (const source of sources) {
