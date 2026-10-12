@@ -15,7 +15,7 @@
 - PostgreSQL-backed student registration and login foundation with bcrypt password hashing and HTTP-only database-backed sessions
 - Role-checked teacher and administrator API examples; privileged roles cannot be selected during public registration
 
-> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration, but the system does not yet have curriculum RAG, verified NESA documents, authentication, PostgreSQL persistence, real student records, or teacher/admin workspaces. Do not use sample metrics as real school results or enter sensitive student information.
+> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration. Student registration, login, session management, and role-checked API examples are implemented but only activate when PostgreSQL and a session secret are configured. Curriculum RAG, verified NESA documents, persistent tutor conversations/progress, and complete teacher/admin workspaces are not implemented yet. Do not treat sample metrics as real school results or enter sensitive student information.
 
 ## PostgreSQL data model (foundation added)
 
@@ -110,9 +110,9 @@ See `.env.example`. Do not commit real API keys, database credentials, or secret
 
 ## Next implementation milestones
 
-1. Add secure authentication and role-based access for students, teachers, school admins, and platform admins.
-2. Add PostgreSQL schema and migrations for users, schools, classes, lessons, assignments, conversations, and progress.
-3. Build an approved Rwanda curriculum knowledge base with retrieval, document provenance, and source citations.
-4. Add teacher-reviewed assessment and grading workflows.
-5. Replace illustrative dashboard statistics with authenticated, permission-checked data.
-6. Add automated API tests, abuse protection suitable for production, and end-to-end verification.
+1. Connect tutor conversations and learning progress to the authenticated user's PostgreSQL records.
+2. Build a verified Rwanda curriculum knowledge base with retrieval, document provenance, and source citations.
+3. Build complete teacher and school-admin workspaces for classes, assignments, submissions, and feedback.
+4. Replace illustrative dashboard statistics with authenticated, permission-checked data.
+5. Add a controlled admin bootstrap/invitation workflow and production-grade abuse monitoring.
+6. Add end-to-end verification, deployment checks, and privacy/data-retention controls.
