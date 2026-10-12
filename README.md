@@ -15,6 +15,12 @@
 
 > **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration, but the system does not yet have curriculum RAG, verified NESA documents, authentication, PostgreSQL persistence, real student records, or teacher/admin workspaces. Do not use sample metrics as real school results or enter sensitive student information.
 
+## PostgreSQL data model (foundation added)
+
+A reviewed initial schema is available at `db/migrations/001_initial_schema.sql`. It defines schools, user accounts and roles, classes and memberships, subjects, learning resources, assignments and submissions, tutor conversations/messages, learning progress, and curriculum-source approval metadata.
+
+**This is a schema foundation, not a live database integration.** The current API does not connect to PostgreSQL, create accounts, authenticate users, or persist chat history yet. No migration is run automatically. Review the SQL, provision a PostgreSQL database, and apply the migration deliberately before adding production student data. Password hashes are represented as a nullable field for a future authentication implementation; do not store plaintext passwords.
+
 ## Technology
 
 - React 18 + TypeScript + Vite
