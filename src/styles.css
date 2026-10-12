@@ -42,3 +42,23 @@
 .history-item b{font-size:10px;color:#454d6a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
 .history-item small{font-size:8px;color:#9a9fb1}
 @media(max-width:650px){.account-panel{margin:10px auto 0;width:calc(100% - 24px);padding:16px}.account-logout{display:none}.account-name{max-width:72px;overflow:hidden;text-overflow:ellipsis}.history-item b{max-width:230px}}
+
+.chat-transcript{display:grid;gap:10px;max-height:340px;overflow:auto;padding:12px;margin-top:12px;border:1px solid #eff0f6;border-radius:12px;background:#fbfbfe}
+.transcript-message{max-width:92%;padding:10px 12px;border-radius:11px;font-size:10px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.transcript-message b{display:block;font-size:9px;margin-bottom:4px}
+.transcript-message p{margin:0}
+.transcript-message.from-user{justify-self:end;background:#7564e6;color:#fff;border-bottom-right-radius:4px}
+.transcript-message.from-ai{justify-self:start;background:#fff;border:1px solid #eceef5;color:#555d78;border-bottom-left-radius:4px}
+.transcript-message.from-ai b{color:#7564e6}
+.conversation-history{border-top:1px solid #eff0f6;margin-top:13px;padding-top:13px}
+.history-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.history-heading>b{font-size:10px;color:#434b69}
+.history-heading .text-link{font-size:9px;padding:0}
+.history-empty{font-size:9px;line-height:1.6;color:#999fb1;margin:10px 0 2px}
+.history-list{display:grid;gap:6px;margin-top:9px}
+.history-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px;border:1px solid #eff0f6;border-radius:9px;background:#fff;text-align:left;color:#8c92a8;cursor:pointer}
+.history-item:hover,.history-item.selected{border-color:#dcd5ff;background:#fbfaff}
+.history-item>span{display:grid;gap:4px;min-width:0}
+.history-item b{font-size:10px;color:#454d6a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
+.history-item small{font-size:8px;color:#9a9fb1}
+@media(max-width:650px){.history-item b{max-width:230px}.history-heading{align-items:flex-start}}
