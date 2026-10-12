@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { configureAuth, requireAuth, requireRole } from './auth.js'
 
@@ -363,9 +364,5 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 function requireDistIndex() {
-  try {
-    return import.meta.resolve('../dist/index.html')
-  } catch {
-    return null
-  }
+  return existsSync(path.join(distDir, 'index.html'))
 }
