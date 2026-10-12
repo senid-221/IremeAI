@@ -20,3 +20,5 @@ jobs:
         run: npm run build
       - name: Check backend syntax
         run: node --check server/index.js
+      - name: Test backend endpoints
+        run: npm test
