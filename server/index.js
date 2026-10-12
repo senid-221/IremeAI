@@ -4,6 +4,7 @@ import path from 'node:path'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { configureAuth, requireAuth, requireRole } from './auth.js'
+import { registerAssessmentRoutes } from './assessments.js'
 import { officialEducationSources } from './education-catalog.js'
 import { educationSetupPage, educationSetupStatus, startEducationSetup } from './education-setup.js'
 
@@ -95,6 +96,7 @@ app.get('/api/admin/overview', requireRole('school_admin', 'platform_admin'), (_
 
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+registerAssessmentRoutes(app, { requireAuth, requireRole, uuidPattern })
 
 
 const studyResourceCatalog = {
