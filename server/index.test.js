@@ -74,3 +74,27 @@ test('admin portal rejects unauthenticated requests', async () => {
   assert.equal(response.status, 401)
   assert.match(body.error, /sign in/i)
 })
+
+test('conversation history requires an authenticated student session', async () => {
+  const response = await fetch(baseUrl + '/api/conversations')
+  assert.equal(response.status, 401)
+})
+
+test('conversation message endpoint validates IDs before querying storage', async () => {
+  const response = await fetch(baseUrl + '/api/conversations/not-a-uuid/messages')
+  assert.equal(response.status, 401)
+})
+
+test('learning progress is private to authenticated users', async () => {
+  const response = await fetch(baseUrl + '/api/progress')
+  assert.equal(response.status, 401)
+})
+
+test('learning progress writes require authentication', async () => {
+  const response = await fetch(baseUrl + '/api/progress', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ progressPercent: 80 }),
+  })
+  assert.equal(response.status, 401)
+})
