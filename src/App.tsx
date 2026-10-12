@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
   ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
-  Lightbulb, Menu, Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2,
+  Lightbulb, Menu, Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2, BrainCircuit, FileText, BarChart3,
   ShieldCheck, Target, TrendingUp, Zap
 } from 'lucide-react'
 
@@ -167,26 +167,6 @@ export default function App() {
     }
   }
 
-  async function toggleSavedResource(key: string) {
-    if (!user) {
-      setAuthMode('login')
-      setAuthOpen(true)
-      setSavedResourceError(lang === 'rw' ? 'Injira kugira ngo ubike ibikoresho byawe.' : 'Sign in to save resources across devices.')
-      return
-    }
-    setSavedResourceError('')
-    const isSaved = savedResources.includes(key)
-    try {
-      const response = await fetch('/api/saved-resources/' + encodeURIComponent(key), { method: isSaved ? 'DELETE' : 'PUT', credentials: 'same-origin' })
-      if (!response.ok && response.status !== 204) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload?.error || 'Could not update saved resources.')
-      }
-      setSavedResources(previous => isSaved ? previous.filter(item => item !== key) : [...previous, key])
-    } catch (error) {
-      setSavedResourceError(error instanceof Error ? error.message : 'Could not update saved resources.')
-    }
-  }
 
   async function saveStudySession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
