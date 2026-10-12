@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "start": "node server.js",
     "dev:api": "node --watch server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "ingest:education": "node scripts/ingest-education.js"
   },
   "dependencies": {
     "@types/react": "^18.3.12",
