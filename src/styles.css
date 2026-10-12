@@ -121,3 +121,72 @@
 .footer{border-top:1px solid #e8eef7}
 @media(max-width:900px){.hero-banner{min-height:250px}.hero-art.brand-hero-art{width:42%;padding:14px}.hero-brand-logo{width:78px}.hero-book-icons{display:none}.hero-brand-copy b{font-size:18px}.hero-brand-copy span{font-size:12px}}
 @media(max-width:640px){.hero-banner{min-height:230px}.hero-copy{max-width:100%;padding-right:0}.hero-art.brand-hero-art{position:relative;inset:auto;width:100%;min-height:100px;border-radius:0 0 16px 16px;justify-content:flex-start;padding:12px 18px}.hero-brand-logo{width:74px;max-height:74px}.hero-brand-copy b{font-size:18px}.hero-banner:after{right:-110px;top:100px;width:80px;height:220px}.hero-actions{flex-wrap:wrap}}
+
+
+/* Accessibility/readability fix: larger text, clear sidebar contrast, white text on blue actions */
+:root{font-size:16px}
+body{font-size:16px;color:#17233d}
+.sidebar{color:#fff}
+.nav-label{font-size:11px;color:#d7e5fa}
+.nav-item{font-size:15px;color:#e5efff;min-height:42px}
+.nav-item:hover{background:#0b4388;color:#fff}
+.nav-item.active{color:#fff;background:linear-gradient(100deg,#0968e8,#0756b8)}
+.school-chip b,.profile-mini b{font-size:13px;color:#fff}
+.school-chip small,.profile-mini small{font-size:11px;color:#d2e2f8}
+.sidebar-card>b{font-size:14px;color:#17233d}
+.sidebar-card p{font-size:12px;color:#4e5b73}
+.sidebar-card>small{font-size:11px;color:#596780}
+.button-primary,.button-primary:hover,.send-button,.send-button:hover,.add-task,.nav-item.active{color:#fff}
+.button-primary{background:#0756b8;border-color:#0756b8}
+.button-primary:hover{background:#06458f;border-color:#06458f}
+.button{font-size:13px;min-height:40px}
+.button-white{color:#0756b8;background:#fff}
+.button-glass{color:#fff}
+.send-button{background:#0756b8;color:#fff}
+.text-link,.progress-foot button,.account-switch button{font-size:12px}
+.language-switch,.icon-button,.account-button{font-size:12px}
+.welcome-row p,.hero-copy p,.hero-brand-copy span,.page-heading p{font-size:14px;line-height:1.65}
+.welcome-row h1,.page-heading h2{letter-spacing:-.4px}
+.stat-label{font-size:12px}
+.stat-trend,.stat-number small{font-size:11px}
+.section-heading h3,.ask-heading h3{font-size:18px}
+.subject-title-row h4,.summary-copy>b,.timeline-item b{font-size:13px}
+.subject-info p,.summary-copy p,.timeline-item small,.task-tag{font-size:11px}
+.progress-foot>span,.progress-foot button{font-size:10px}
+.ask-heading p,.suggestion-row button,.ask-input input,.account-form label,.profile-settings-form>label{font-size:12px}
+.suggestion-row button{color:#38445e}
+.ask-input input{color:#17233d}
+.ask-input input::placeholder{color:#68748a;opacity:1}
+.privacy-note,.footer,.footer-status{font-size:11px}
+.learning-card h3,.resource-content h3{font-size:16px}
+.learning-card p,.resource-content p,.learning-card-foot>span{font-size:12px}
+.learning-card-foot .button{font-size:12px}
+.resource-tag,.save-button,.page-chip,.account-form label small,.profile-settings-form label small{font-size:11px}
+.transcript-message{font-size:13px}
+.transcript-message b{font-size:12px}
+.account-panel-heading h3{font-size:20px}
+.account-panel-heading p,.account-error,.account-switch,.profile-feedback{font-size:12px}
+.history-heading>b,.history-item b{font-size:12px}
+.history-item small,.history-empty{font-size:11px}
+.profile-settings-intro h3{font-size:18px}
+.profile-settings-intro p,.profile-settings-form input,.profile-settings-form select{font-size:13px}
+.profile-signin-prompt p{font-size:13px}
+.help-item summary{font-size:13px}
+.help-item p,.learning-tip p,.progress-detail>p{font-size:12px;line-height:1.75}
+.learning-tip b,.schedule-date b{font-size:14px}
+.schedule-row>div b{font-size:13px}
+.schedule-row>div small,.schedule-date small{font-size:11px}
+@media(max-width:650px){
+  .nav-item{font-size:15px;min-height:44px}
+  .welcome-row h1{font-size:25px}
+  .welcome-row p,.hero-copy p,.page-heading p{font-size:13px}
+  .hero-copy h2{font-size:24px}
+  .hero-brand-copy span{font-size:13px}
+  .stat-label{font-size:11px}
+  .section-heading h3{font-size:17px}
+  .subject-title-row h4{font-size:12px}
+  .subject-info p{font-size:11px}
+  .ask-input input{font-size:12px}
+  .timeline-item b{font-size:12px}
+  .button{font-size:12px}
+}
