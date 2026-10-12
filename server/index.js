@@ -23,7 +23,7 @@ app.use('/api', (req, res, next) => {
   }
   if (origin) res.setHeader('Access-Control-Allow-Origin', allowedOrigin || origin)
   res.setHeader('Vary', 'Origin')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.sendStatus(204)
 
@@ -63,6 +63,102 @@ app.get('/api/admin/overview', requireRole('school_admin', 'platform_admin'), (_
 
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+
+const studyResourceCatalog = {
+  'algebra-essentials': { title: 'Algebra essentials', subject: 'Mathematics', resourceType: 'Study guide', duration: '12 min read' },
+  'cell-structure-function': { title: 'Cell structure & function', subject: 'Biology', resourceType: 'Lesson notes', duration: '18 min read' },
+  'essay-writing-framework': { title: 'Essay writing framework', subject: 'English language', resourceType: 'Writing guide', duration: '8 min read' },
+  'practice-equations': { title: 'Practice questions: equations', subject: 'Mathematics', resourceType: 'Practice set', duration: '10 questions' },
+}
+
+app.get('/api/saved-resources', requireAuth, async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query('SELECT resource_key, title, subject, resource_type, duration, created_at FROM user_saved_resources WHERE user_id = $1 ORDER BY created_at DESC', [req.session.userId])
+    return res.json({ savedResources: result.rows })
+  } catch (error) {
+    console.error('Saved resources lookup failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not load saved resources.' })
+  }
+})
+
+app.put('/api/saved-resources/:key', requireAuth, async (req, res) => {
+  const resource = studyResourceCatalog[req.params.key]
+  if (!resource) return res.status(404).json({ error: 'This study resource is not available.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query(
+      'INSERT INTO user_saved_resources (user_id, resource_key, title, subject, resource_type, duration) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (user_id, resource_key) DO UPDATE SET title = EXCLUDED.title, subject = EXCLUDED.subject, resource_type = EXCLUDED.resource_type, duration = EXCLUDED.duration RETURNING resource_key, title, subject, resource_type, duration, created_at',
+      [req.session.userId, req.params.key, resource.title, resource.subject, resource.resourceType, resource.duration],
+    )
+    return res.json({ savedResource: result.rows[0] })
+  } catch (error) {
+    console.error('Save resource failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not save this resource.' })
+  }
+})
+
+app.delete('/api/saved-resources/:key', requireAuth, async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    await pool.query('DELETE FROM user_saved_resources WHERE user_id = $1 AND resource_key = $2', [req.session.userId, req.params.key])
+    return res.status(204).end()
+  } catch (error) {
+    console.error('Remove saved resource failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not remove this saved resource.' })
+  }
+})
+
+app.get('/api/study-sessions', requireAuth, async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query('SELECT id, title, scheduled_for, duration_minutes, status, created_at FROM user_study_sessions WHERE user_id = $1 ORDER BY COALESCE(scheduled_for, created_at) ASC LIMIT 100', [req.session.userId])
+    return res.json({ sessions: result.rows })
+  } catch (error) {
+    console.error('Study sessions lookup failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not load your study schedule.' })
+  }
+})
+
+app.post('/api/study-sessions', requireAuth, async (req, res) => {
+  const title = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
+  const scheduledFor = typeof req.body?.scheduledFor === 'string' && req.body.scheduledFor.trim() ? req.body.scheduledFor : null
+  const durationMinutes = req.body?.durationMinutes === undefined ? 45 : req.body.durationMinutes
+  if (title.length < 2 || title.length > 160) return res.status(400).json({ error: 'Session title must be between 2 and 160 characters.' })
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 5 || durationMinutes > 360) return res.status(400).json({ error: 'Session duration must be between 5 and 360 minutes.' })
+  if (scheduledFor && (Number.isNaN(Date.parse(scheduledFor)) || !/[zZ]|[+-]\d{2}:\d{2}$/.test(scheduledFor))) return res.status(400).json({ error: 'Provide a valid scheduledFor timestamp with timezone.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query(
+      'INSERT INTO user_study_sessions (user_id, title, scheduled_for, duration_minutes) VALUES ($1, $2, $3, $4) RETURNING id, title, scheduled_for, duration_minutes, status, created_at',
+      [req.session.userId, title, scheduledFor, durationMinutes],
+    )
+    return res.status(201).json({ session: result.rows[0] })
+  } catch (error) {
+    console.error('Study session create failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not create your study session.' })
+  }
+})
+
+app.delete('/api/study-sessions/:id', requireAuth, async (req, res) => {
+  if (!uuidPattern.test(req.params.id)) return res.status(400).json({ error: 'Study session ID is invalid.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query('DELETE FROM user_study_sessions WHERE id = $1 AND user_id = $2', [req.params.id, req.session.userId])
+    if (!result.rowCount) return res.status(404).json({ error: 'Study session not found.' })
+    return res.status(204).end()
+  } catch (error) {
+    console.error('Study session delete failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not remove this study session.' })
+  }
+})
 
 app.get('/api/conversations', requireAuth, async (req, res) => {
   const pool = req.app.locals.authPool
