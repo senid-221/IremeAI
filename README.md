@@ -14,8 +14,10 @@
 - Server-side API credentials, input validation, request-size limits, basic per-IP rate limiting, and optional origin restriction
 - PostgreSQL-backed student registration and login foundation with bcrypt password hashing and HTTP-only database-backed sessions
 - Role-checked teacher and administrator API examples; privileged roles cannot be selected during public registration
+- Per-user persistent AI conversation history with recent context, conversation listing, and ownership checks
+- Authenticated learning-progress read/write endpoints for subjects and resources
 
-> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration. Student registration, login, session management, and role-checked API examples are implemented but only activate when PostgreSQL and a session secret are configured. Curriculum RAG, verified NESA documents, persistent tutor conversations/progress, and complete teacher/admin workspaces are not implemented yet. Do not treat sample metrics as real school results or enter sensitive student information.
+> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration. Student registration, login, session management, and role-checked API examples are implemented but only activate when PostgreSQL and a session secret are configured. Curriculum RAG, verified NESA documents, the UI does not yet load saved conversations or replace its demo progress cards with the persistent API data, and complete teacher/admin workspaces are not implemented yet. Do not treat sample metrics as real school results or enter sensitive student information.
 
 ## PostgreSQL data model (foundation added)
 
@@ -72,7 +74,17 @@ Run the backend endpoint tests with:
 npm test
 \`\`\`
 
-The test suite checks health output, AI request validation/configuration, safe auth configuration failures, and unauthenticated access denial for teacher/admin endpoints. GitHub Actions runs the frontend build, backend syntax check, and API tests.
+The test suite checks health output, AI request validation/configuration, safe auth configuration failures, and unauthenticated access denial for teacher/admin, conversation-history, and progress endpoints. GitHub Actions runs the frontend build, backend syntax check, and API tests.
+
+## Learning data API
+
+- `GET /api/conversations` — lists the signed-in user's recent conversations.
+- `GET /api/conversations/:id/messages` — loads messages only if the conversation belongs to the signed-in user.
+- `POST /api/ask` — when signed in, accepts optional `conversationId`, includes recent messages as context, and saves the user/assistant exchange to PostgreSQL. Without a signed-in session it still supports one-off tutoring but does not persist the conversation.
+- `GET /api/progress` — lists the signed-in user's progress records.
+- `PUT /api/progress` — upserts a progress percentage from 0–100 for exactly one existing `subjectId` or `resourceId`.
+
+Apply both SQL files in order: `db/migrations/001_initial_schema.sql`, then `db/migrations/002_learning_persistence_indexes.sql`. Progress endpoints are ready for database-backed subject/resource IDs; current frontend demo subjects/resources are not yet seeded into the database.
 
 ## Authentication API
 
