@@ -9,6 +9,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { configureAuth, requireAuth, requireRole } from './auth.js'
 import { officialEducationSources } from './education-catalog.js'
+import { educationSetupPage, educationSetupStatus, startEducationSetup } from './education-setup.js'
 
 const app = express()
 const port = Number(process.env.PORT || 8787)
@@ -48,6 +49,11 @@ app.use('/api', (req, res, next) => {
 })
 
 const auth = configureAuth(app)
+
+// hPanel-only maintenance tool protected by a dedicated server-side secret.
+app.get('/education-setup', educationSetupPage)
+app.get('/api/maintenance/education-setup/status', educationSetupStatus)
+app.post('/api/maintenance/education-setup', startEducationSetup)
 
 app.get('/api/health', (_req, res) => {
   res.json({
