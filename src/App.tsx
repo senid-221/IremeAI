@@ -62,6 +62,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
+  const [isAsking, setIsAsking] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const [savedResources, setSavedResources] = useState<string[]>([])
@@ -71,13 +72,30 @@ export default function App() {
   const t = copy[lang]
   const localizedSubjects = useMemo(() => subjects.map(s => ({ ...s, displayName: lang === 'rw' ? s.rw : s.name })).filter(s => s.displayName.toLowerCase().includes(query.toLowerCase())), [lang, query])
 
-  function askAI(value = question) {
+  async function askAI(value = question) {
     const q = value.trim()
-    if (!q) return
+    if (!q || isAsking) return
     setQuestion(q)
-    setAnswer(lang === 'rw'
-      ? 'Murakoze kubaza! Iyi ni demo ya Ireme AI. Uko turimo kubaka sisitemu, tuzahuza umufasha n’amasomo yemejwe kugira ngo aguhe igisubizo gifite amasoko yizewe. Ikibazo cyawe: ' + q
-      : 'Great question! This is the Ireme AI interface preview. Once the education knowledge base and AI provider are connected, I’ll explain this step by step using trusted learning materials. Your question: ' + q)
+    setAnswer('')
+    setIsAsking(true)
+    try {
+      const response = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, language: lang }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = typeof payload?.error === 'string' ? payload.error : (lang === 'rw' ? 'Ireme AI ntishoboye gusubiza ubu. Ongera ugerageze.' : 'Ireme AI could not answer right now. Please try again.')
+        setAnswer(lang === 'rw' && payload?.code === 'AI_NOT_CONFIGURED' ? 'Serivisi ya AI ntirashyirwaho. Shyira OPENAI_API_KEY mu mabanga ya server kugira ngo utangire.' : message)
+        return
+      }
+      setAnswer(typeof payload?.answer === 'string' ? payload.answer : (lang === 'rw' ? 'Nta gisubizo cyabonetse. Ongera ugerageze.' : 'No answer was returned. Please try again.'))
+    } catch {
+      setAnswer(lang === 'rw' ? 'Ntabwo twabashije kugera kuri serivisi ya AI. Reba ko server ikora, hanyuma wongere ugerageze.' : 'Could not reach the AI service. Check that the Ireme server is running, then try again.')
+    } finally {
+      setIsAsking(false)
+    }
   }
 
   return (
@@ -147,8 +165,8 @@ export default function App() {
             <section className="panel ask-panel" id="ask-panel">
               <div className="ask-heading"><div className="ask-logo"><Sparkles size={19}/></div><div><h3>{t.askTitle}</h3><p>{t.askSub}</p></div><span className="online-badge"><i/>{t.online}</span></div>
               <div className="suggestion-row">{[t.prompt1,t.prompt2,t.prompt3].map((p,i)=><button key={p} onClick={() => {setQuestion(p);document.getElementById('ask-ireme')?.focus()}}><span>{[<Lightbulb size={15}/>,<Target size={15}/>,<BookOpen size={15}/>][i]}</span>{p}<ArrowUpRight size={13}/></button>)}</div>
-              {answer && <AnimatePresence><motion.div className="answer-box" initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}><div className="answer-avatar"><Sparkles size={15}/></div><p>{answer}</p></motion.div></AnimatePresence>}
-              <form className="ask-input" onSubmit={e => {e.preventDefault();askAI()}}><button type="button" className="attach-button" aria-label="Add attachment"><Plus size={19}/></button><input id="ask-ireme" value={question} onChange={e=>setQuestion(e.target.value)} placeholder={t.ask}/><button type="button" className="mic-button" aria-label="Voice input"><Mic size={18}/></button><button className="send-button" type="submit" aria-label="Send question"><Send size={17}/></button></form><div className="privacy-note"><ShieldCheck size={13}/> Your learning conversations stay private and secure.</div>
+              {(answer || isAsking) && <AnimatePresence><motion.div className="answer-box" initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}><div className="answer-avatar"><Sparkles size={15}/></div><p>{isAsking ? (lang === 'rw' ? 'Tegereza gato, ndimo gutegura igisubizo…' : 'One moment, I’m preparing your answer…') : answer}</p></motion.div></AnimatePresence>}
+              <form className="ask-input" onSubmit={e => {e.preventDefault();askAI()}}><button type="button" className="attach-button" aria-label="Add attachment"><Plus size={19}/></button><input id="ask-ireme" value={question} onChange={e=>setQuestion(e.target.value)} placeholder={t.ask}/><button type="button" className="mic-button" aria-label="Voice input"><Mic size={18}/></button><button className="send-button" type="submit" aria-label="Send question" disabled={isAsking}><Send size={17}/></button></form><div className="privacy-note"><ShieldCheck size={13}/> Your learning conversations stay private and secure.</div>
             </section>
             <section className="panel today-panel"><div className="section-heading"><div><span className="section-kicker">STAY ORGANIZED</span><h3>{t.today}</h3></div><button className="text-link" onClick={() => setActive('schedule')}>{t.viewPlan}<ArrowRight size={15}/></button></div><div className="timeline"><div className="timeline-item done"><span className="timeline-dot"><Check size={12}/></span><div><small>08:30 – 09:15 AM</small><b>Algebra: Linear equations</b><span className="task-tag completed-tag">Completed</span></div></div><div className="timeline-item current"><span className="timeline-dot"><Play size={11} fill="currentColor"/></span><div><small>10:00 – 10:45 AM</small><b>Cell biology &amp; genetics</b><span className="task-tag current-tag">In progress</span></div></div><div className="timeline-item"><span className="timeline-dot"><Clock3 size={12}/></span><div><small>02:00 – 02:30 PM</small><b>English: Essay writing</b><span className="task-tag">Upcoming</span></div></div></div><button className="add-task" onClick={() => setActive('schedule')}><Plus size={16}/> Add study session</button></section>
           </div>
