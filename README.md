@@ -19,13 +19,23 @@
 - Persistent per-student study-library saves and study-session scheduling, with ownership-scoped deletion
 - Student profile editing for name, grade level, and preferred language
 
-> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration. Student registration, login, session management, and role-checked API examples are implemented but only activate when PostgreSQL and a session secret are configured. Curriculum RAG, verified NESA documents, the UI does not yet load saved conversations or replace its demo progress cards with the persistent API data, and complete teacher/admin workspaces are not implemented yet. Do not treat sample metrics as real school results or enter sensitive student information.
+> **Important status note:** The current UI still contains sample student metrics and illustrative resources. The tutor can call a real AI provider after server configuration. Student registration, login, session management, and role-checked API examples are implemented but only activate when PostgreSQL and a session secret are configured. Full curriculum-document ingestion (PDF/HTML extraction), verified NESA past-paper corpus, school-by-school official data verification, and the UI does not yet load saved conversations or replace its demo progress cards with the persistent API data, and complete teacher/admin workspaces are not implemented yet. Do not treat sample metrics as real school results or enter sensitive student information.
 
 ## PostgreSQL data model (foundation added)
 
 A reviewed initial schema is available at `db/migrations/001_initial_schema.sql`. It defines schools, user accounts and roles, classes and memberships, subjects, learning resources, assignments and submissions, tutor conversations/messages, learning progress, and curriculum-source approval metadata.
 
 **The database schema is not applied automatically.** Review the SQL, provision PostgreSQL, and apply the migration before enabling accounts. The authentication API uses PostgreSQL when both `DATABASE_URL` and `SESSION_SECRET` are configured; otherwise account endpoints return a safe configuration error. Saved resources, study sessions, chat history, and learning progress are persisted per signed-in account after the matching migrations are applied. Do not store plaintext passwords or enter sensitive student information before deploying appropriate access controls and privacy processes.
+
+
+## Rwanda education knowledge base (migration 004)
+
+The new migration creates PostgreSQL tables for education documents and searchable text chunks, seeds common school subjects, and registers source links for REB curriculum/textbooks/teacher guides, NESA assessment resources, RTB TVET curricula/publications, and a school-directory discovery source. It also adds:
+- `GET /api/education/sources` — the source catalogue.
+- `GET /api/education/search?q=...&level=...&subject=...` — search verified entries and indexed excerpts.
+- `POST /api/ask` now attempts to retrieve matching verified database excerpts before calling the AI model and passes those excerpts into its prompt.
+
+**Important limitation:** this commit does not download or import every PDF, textbook, teacher guide, NESA past paper, or all schools in Rwanda. The initial database includes official source links and short index descriptions only. Until actual documents are downloaded lawfully, extracted, reviewed, and inserted as chunks with correct metadata, Ireme AI must not claim it has read the full documents. The school directory is a discovery source, not a verified official nationwide register. Apply migration 004 to the same PostgreSQL database used by the live server before expecting database search results. `OPENAI_API_KEY` must also be configured for the AI agent to answer questions.
 
 ## Technology
 
@@ -44,7 +54,7 @@ npm install
 ```
 
 3. Copy `.env.example` to `.env`. Set `OPENAI_API_KEY`, `DATABASE_URL`, and a strong random `SESSION_SECRET` on the server. Generate the session secret with a secure random generator (at least 32 random bytes). Never put secrets in frontend variables such as `VITE_OPENAI_API_KEY`.
-4. Apply `db/migrations/001_initial_schema.sql`, `002_learning_persistence_indexes.sql`, and `003_student_library_and_schedule.sql` in order to a new PostgreSQL database after reviewing them. The session library creates its own `user_sessions` table when auth is configured.
+4. Apply `db/migrations/001_initial_schema.sql`, `002_learning_persistence_indexes.sql`, `003_student_library_and_schedule.sql`, and `004_education_knowledge_base.sql` in order to a new PostgreSQL database after reviewing them. The session library creates its own `user_sessions` table when auth is configured.
 5. Start the backend in one terminal:
 
 ```bash
