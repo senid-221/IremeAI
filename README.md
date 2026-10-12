@@ -11,6 +11,8 @@
 - Node.js / Express backend serving the built frontend
 - `GET /api/health` health endpoint
 - `POST /api/ask` educational tutoring endpoint connected to an OpenAI-compatible chat-completions API
+- Optional live web research through Exa search, with research snippets and source URLs passed into the tutor context
+- AI responses can return `researchUsed` and source metadata for traceability
 - Server-side API credentials, input validation, request-size limits, basic per-IP rate limiting, and optional origin restriction
 - PostgreSQL-backed student registration and login foundation with bcrypt password hashing and HTTP-only database-backed sessions
 - Role-checked teacher and administrator API examples; privileged roles cannot be selected during public registration
@@ -27,6 +29,12 @@ A reviewed initial schema is available at `db/migrations/001_initial_schema.sql`
 
 **The database schema is not applied automatically.** Review the SQL, provision PostgreSQL, and apply the migration before enabling accounts. The authentication API uses PostgreSQL when both `DATABASE_URL` and `SESSION_SECRET` are configured; otherwise account endpoints return a safe configuration error. Saved resources, study sessions, chat history, and learning progress are persisted per signed-in account after the matching migrations are applied. Do not store plaintext passwords or enter sensitive student information before deploying appropriate access controls and privacy processes.
 
+
+## Live research for teaching
+
+When `EXA_API_KEY` is configured, `POST /api/ask` performs a live Exa web search for the learner's question, passes up to six results and their available text/highlights into the AI prompt, and returns source title, URL and publication-date metadata. The system prompt directs the tutor to prefer REB/NESA/RTB and government sources for Rwanda education, compare independent credible sources when possible, distinguish facts from examples, and cite source URLs. If live search fails or no key is configured, tutoring continues but must not claim live research happened. Search snippets can be incomplete or wrong, so the model is instructed to assess them critically.
+
+This feature does not replace the separate process of collecting and indexing full official PDF textbooks, teacher guides, past examination papers or a complete verified school register.
 
 ## Rwanda education knowledge base (migration 004)
 
@@ -53,7 +61,7 @@ The new migration creates PostgreSQL tables for education documents and searchab
 npm install
 ```
 
-3. Copy `.env.example` to `.env`. Set `OPENAI_API_KEY`, `DATABASE_URL`, and a strong random `SESSION_SECRET` on the server. Generate the session secret with a secure random generator (at least 32 random bytes). Never put secrets in frontend variables such as `VITE_OPENAI_API_KEY`.
+3. Copy `.env.example` to `.env`. Set `OPENAI_API_KEY`, `DATABASE_URL`, and a strong random `SESSION_SECRET` on the server. Set `EXA_API_KEY` to enable live web research for current and factual questions; obtain an API key from Exa and add it only to the server environment, never the frontend. Generate the session secret with a secure random generator (at least 32 random bytes). Never put secrets in frontend variables such as `VITE_OPENAI_API_KEY`.
 4. Apply `db/migrations/001_initial_schema.sql`, `002_learning_persistence_indexes.sql`, `003_student_library_and_schedule.sql`, and `004_education_knowledge_base.sql` in order to a new PostgreSQL database after reviewing them. The session library creates its own `user_sessions` table when auth is configured.
 5. Start the backend in one terminal:
 
