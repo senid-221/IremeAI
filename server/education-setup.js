@@ -16,7 +16,7 @@ const migrationFiles = [
 let job = { state: 'idle', startedAt: null, finishedAt: null, logs: [], error: null }
 
 function authorized(req) {
-  const expected = process.env.EDUCATION_SETUP_SECRET || ''
+  const expected = process.env.EDUCATION_SETUP_TOKEN || ''
   const supplied = typeof req.headers.authorization === 'string' && req.headers.authorization.startsWith('Bearer ')
     ? req.headers.authorization.slice(7)
     : ''
@@ -30,7 +30,7 @@ function log(message) {
 function safeError(error) {
   return String(error?.message || error || 'Unknown error')
     .replace(process.env.DATABASE_URL || '\u0000', '[database connection]')
-    .replace(process.env.EDUCATION_SETUP_SECRET || '\u0000', '[secret]')
+    .replace(process.env.EDUCATION_SETUP_TOKEN || '\u0000', '[secret]')
     .slice(0, 500)
 }
 
