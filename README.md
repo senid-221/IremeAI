@@ -55,6 +55,16 @@ npm start
 
 Set the hosting service's start command to `npm start` and configure `OPENAI_API_KEY`, `OPENAI_MODEL`, and `PORT` in its server environment. The Express server serves the production `dist` directory and the API from the same origin.
 
+## Tests
+
+Run the backend endpoint tests with:
+
+\`\`\`bash
+npm test
+\`\`\`
+
+The test suite checks health output, empty-question validation, and the safe response when the AI key is not configured. GitHub Actions also runs the frontend build and backend syntax check.
+
 ## API endpoints
 
 ### `GET /api/health`
