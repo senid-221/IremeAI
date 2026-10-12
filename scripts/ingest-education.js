@@ -10,11 +10,12 @@ if (!DATABASE_URL) {
   process.exit(1)
 }
 
-const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 40), 1), 200)
+const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 100), 1), 200)
 const MAX_CHARS = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_CHARS || 1500000), 10000), 5000000)
 const TIMEOUT_MS = 25000
-const INDEXER_BUILD = '2026-10-12-curriculum-crawl-1'
+const INDEXER_BUILD = '2026-10-12-curriculum-crawl-2'
 const USER_AGENT = 'IremeAI-EducationIndexer/1.0 (official education resource indexing; contact site administrator)'
+const MAX_SOURCE_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_SOURCE_PAGES || 30), 1), 100)
 const sources = [
   { publisher: 'Rwanda TVET Board', title: 'Publication of TVET Curricula for 2023-2024 School Year', url: 'https://www.nrs.gov.rw/fileadmin/user_upload/nrs2024/Publication_of_TVET_curricula_for_2023-2024_school_year-RTB_september.pdf', level: 'TVET Levels 1-5', type: 'tvet_module' },
   { publisher: 'Rwanda TVET Board', title: 'RQF Level 3 English at Workplace Training Manual', url: 'https://www.elearning.rtb.gov.rw/pluginfile.php/8838/mod_folder/content/0/CCMEN302%20%20ENGLISH%20AT%20WORKPLACE.pdf?forcedownload=1', level: 'TVET Level 3', type: 'tvet_module' },
@@ -113,7 +114,7 @@ async function fetchPage(url) {
   if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type + '; final URL: ' + finalUrl)
   const html = buffer.toString('utf8')
   const text = cleanHtml(html).slice(0, 60000)
-  const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
+  const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => m[1].replace(/&amp;/gi, '&').replace(/&#38;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")).map(href => safeUrl(href, finalUrl)).filter(Boolean)
   return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en', resourceType: 'html' }
 }
 function inferMetadata(source, page) {
@@ -169,7 +170,7 @@ async function main() {
   client.release()
   console.log('INDEXER_BUILD:', INDEXER_BUILD)
   console.log('Ireme AI official-source HTML/PDF indexing started.')
-  console.log('Limit:', MAX_PAGES, 'pages; maximum extracted text:', MAX_CHARS, 'characters.')
+  console.log('Limit:', MAX_PAGES, 'pages;', MAX_SOURCE_PAGES, 'pages per source; maximum extracted text:', MAX_CHARS, 'characters.')
   console.log('Direct curriculum PDF source enabled:', sources[0].url)
   try {
     for (const source of sources) {
@@ -177,7 +178,7 @@ async function main() {
       let sourcePages = 0
       let sourceChunksBefore = stored
       console.log('SOURCE START:', source.title, '|', source.url)
-      while (queue.length && pages < MAX_PAGES && totalChars < MAX_CHARS && sourcePages < 12) {
+      while (queue.length && pages < MAX_PAGES && totalChars < MAX_CHARS && sourcePages < MAX_SOURCE_PAGES) {
         const url = queue.shift()
         if (!url || seen.has(url)) continue
         seen.add(url)
