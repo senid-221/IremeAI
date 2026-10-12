@@ -56,6 +56,9 @@ export function configureAuth(app) {
     }))
   }
 
+  app.locals.authPool = pool
+  app.locals.authConfigured = ready
+
   const router = Router()
   router.use((req, res, next) => {
     if (!ready || !pool) return unavailable(res)
@@ -89,6 +92,7 @@ export function configureAuth(app) {
       req.session.regenerate(error => {
         if (error) return res.status(500).json({ error: 'Could not start a secure session.' })
         req.session.userId = result.rows[0].id
+        req.session.role = result.rows[0].role
         req.session.save(saveError => {
           if (saveError) return res.status(500).json({ error: 'Could not save your session. Please sign in.' })
           return res.status(201).json({ user: publicUser(result.rows[0]) })
@@ -123,6 +127,7 @@ export function configureAuth(app) {
       req.session.regenerate(error => {
         if (error) return res.status(500).json({ error: 'Could not start a secure session.' })
         req.session.userId = user.id
+        req.session.role = user.role
         req.session.save(async saveError => {
           if (saveError) return res.status(500).json({ error: 'Could not save your session. Please try again.' })
           try {
@@ -181,9 +186,20 @@ export function requireAuth(req, res, next) {
 }
 
 export function requireRole(...roles) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.session?.userId) return res.status(401).json({ error: 'Please sign in to continue.' })
-    if (!roles.includes(req.session.role)) return res.status(403).json({ error: 'You do not have permission to access this resource.' })
-    return next()
+    const pool = req.app.locals.authPool
+    if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+    try {
+      const result = await pool.query('SELECT role, status FROM users WHERE id = $1 LIMIT 1', [req.session.userId])
+      const user = result.rows[0]
+      if (!user || user.status !== 'active') return res.status(401).json({ error: 'Your session is no longer active.' })
+      req.session.role = user.role
+      if (!roles.includes(user.role)) return res.status(403).json({ error: 'You do not have permission to access this resource.' })
+      return next()
+    } catch (error) {
+      console.error('Role authorization failed:', error?.message || 'unknown error')
+      return res.status(500).json({ error: 'Could not verify your access right now.' })
+    }
   }
 }
