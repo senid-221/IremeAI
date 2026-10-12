@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
+import AssessmentWorkspace from './AssessmentWorkspace'
 import {
-  ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
+  ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check, ClipboardList,
   ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
   Lightbulb, Menu, Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2, BrainCircuit,
   ShieldCheck, Target, TrendingUp, Zap
@@ -24,7 +25,7 @@ const copy = {
     start: 'Start learning', explore: 'Explore subjects', streak: 'day streak',
     lessons: 'lessons completed', accuracy: 'quiz accuracy', hours: 'learning hours',
     home: 'Overview', learn: 'My learning', library: 'Study library', progressNav: 'My progress',
-    schedule: 'Schedule', help: 'Help center', today: 'Today’s plan',
+    schedule: 'Schedule', exams: 'Exams & quizzes', help: 'Help center', today: 'Today’s plan',
     next: 'Up next', viewPlan: 'View full plan', maths: 'Mathematics', biology: 'Biology',
     english: 'English language', physics: 'Physics', lesson: 'Continue lesson',
     askTitle: 'Let’s figure it out together', askSub: 'Ask a question or choose a prompt to get started.',
@@ -41,7 +42,7 @@ const copy = {
     start: 'Tangira kwiga', explore: 'Reba amasomo', streak: 'iminsi wikurikiranya',
     lessons: 'amasomo warangije', accuracy: 'amanota y’ibizamini', hours: 'amasaha yo kwiga',
     home: 'Incamake', learn: 'Kwiga kwanjye', library: 'Isomero', progressNav: 'Iterambere',
-    schedule: 'Gahunda', help: 'Ubufasha', today: 'Gahunda y’uyu munsi',
+    schedule: 'Gahunda', exams: 'Ibizamini', help: 'Ubufasha', today: 'Gahunda y’uyu munsi',
     next: 'Isomo rikurikira', viewPlan: 'Reba gahunda yose', maths: 'Imibare', biology: 'Ubugenge bw’ibinyabuzima',
     english: 'Icyongereza', physics: 'Ubugenge', lesson: 'Komeza isomo',
     askTitle: 'Reka tubisobanukirwe hamwe', askSub: 'Baza ikibazo cyangwa uhitemo urugero kugira ngo dutangire.',
@@ -54,7 +55,7 @@ const subjects: Array<{name:string;rw:string;category:string;color:string;icon:L
 
 const navItems = [
   { key: 'home', icon: LayoutDashboard }, { key: 'learn', icon: BookOpen },
-  { key: 'library', icon: BookOpenCheck }, { key: 'progressNav', icon: TrendingUp },
+  { key: 'library', icon: BookOpenCheck }, { key: 'exams', icon: ClipboardList }, { key: 'progressNav', icon: TrendingUp },
   { key: 'schedule', icon: CalendarDays },
 ] as const
 
@@ -375,6 +376,7 @@ export default function App() {
           </div>
 
           {active !== 'home' && <motion.section className="workspace-page" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:.25}}>
+            {active === 'exams' && <AssessmentWorkspace lang={lang} signedIn={Boolean(user)} onSignIn={() => { setAuthMode('login'); setAuthOpen(true); setAuthError('') }} />}
             {active === 'learn' && <><div className="page-heading"><div><span className="section-kicker">{lang === 'rw' ? 'GUKOMEZA ITERAMBERE' : 'YOUR LEARNING PATH'}</span><h2>{lang === 'rw' ? 'Amasomo yanjye' : 'My learning'}</h2><p>{lang === 'rw' ? 'Hitamo isomo ukomeze kwiga ku muvuduko wawe.' : 'Choose a subject and continue learning at your own pace.'}</p></div><span className="page-chip"><BookOpen size={15}/> {localizedSubjects.length} subjects</span></div><div className="learning-grid">{localizedSubjects.map(s => <article className="learning-card" key={s.name}><img src={s.image} alt="" loading="lazy"/><div className="learning-card-body"><span className="resource-tag">{s.category}</span><h3>{s.displayName}</h3><p>{s.lessons}</p><div className="progress-track"><span style={{width:`${s.progress}%`}}/></div><div className="learning-card-foot"><span>{s.progress}% complete</span><button className="button button-primary" onClick={() => {setQuestion(lang === 'rw' ? 'Mfasha kwiga ' + s.rw : 'Teach me ' + s.name);setActive('home');setTimeout(() => document.getElementById('ask-ireme')?.focus(),50)}}>{lang === 'rw' ? 'Komeza' : 'Continue'} <ArrowRight size={14}/></button></div></div></article>)}</div><div className="panel learning-tip"><span className="tip-icon"><Lightbulb size={20}/></span><div><b>{lang === 'rw' ? 'Inama y’imyigire' : 'A smarter way to study'}</b><p>{lang === 'rw' ? 'Gabanya isomo mo uduce duto, ukore imyitozo, hanyuma usubiremo ibyo wize.' : 'Break a topic into small steps, practice what you learned, then revisit anything that felt difficult.'}</p></div></div></>}
             {active === 'library' && <><div className="page-heading"><div><span className="section-kicker">{lang === 'rw' ? 'IBIKORESHO BYO KWIGA' : 'RWANDA OFFICIAL LEARNING RESOURCES'}</span><h2>{lang === 'rw' ? 'Isomero ry’amasomo' : 'Study library'}</h2><p>{lang === 'rw' ? 'Amasomo, ibitabo, integanyanyigisho n’amabwiriza ava ku mbuga zemewe za REB na NESA.' : 'Curriculum, textbooks, assessment guides and learning materials from official REB and NESA sources.'}</p></div><span className="page-chip"><BookOpenCheck size={15}/> {savedResources.length} saved</span></div><div className="resource-grid">
 <article className="panel learning-tip"><img className="resource-photo" src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=720&q=80" alt="REB E-Learning: Textbooks and lessons" loading="lazy" referrerPolicy="no-referrer"/><span className="tip-icon"><BookOpen size={20}/></span><div><b>{lang === 'rw' ? 'REB E-Learning: Ibitabo n’amasomo' : 'REB E-Learning: Textbooks and lessons'}</b><p>{lang === 'rw' ? 'Ibitabo n’ibikoresho by’amashuri abanza n’ayisumbuye.' : 'Textbooks and learning materials for primary and secondary school.'}</p><a href="https://elearning.reb.rw/" target="_blank" rel="noreferrer">{lang === 'rw' ? 'Fungura REB E-Learning' : 'Open REB E-Learning'} <ArrowUpRight size={14}/></a></div></article>
