@@ -62,3 +62,25 @@
 .history-item b{font-size:10px;color:#454d6a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
 .history-item small{font-size:8px;color:#9a9fb1}
 @media(max-width:650px){.history-item b{max-width:230px}.history-heading{align-items:flex-start}}
+
+
+/* Student profile and account settings */
+.profile-settings-form{display:grid;gap:15px;width:min(620px,100%);padding:22px;margin-top:18px}
+.profile-settings-intro{display:flex;align-items:center;gap:13px;padding-bottom:15px;border-bottom:1px solid #eff0f6;margin-bottom:2px}
+.profile-large-avatar{width:46px;height:46px;border-radius:14px;font-size:18px;flex-shrink:0}
+.profile-settings-intro h3{margin:0 0 4px;color:#303854;font:800 16px Manrope,sans-serif}
+.profile-settings-intro p{margin:0 0 3px;color:#858ba2;font-size:11px}
+.profile-settings-intro small{color:#9a9fb1;font-size:9px;text-transform:capitalize}
+.profile-settings-form>label{display:grid;gap:7px;color:#555d7a;font-size:11px;font-weight:700}
+.profile-settings-form input,.profile-settings-form select{width:100%;min-height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #e6e8f1;border-radius:10px;background:#fcfcff;color:#303854;font:500 12px 'DM Sans',sans-serif;outline:0}
+.profile-settings-form input:focus,.profile-settings-form select:focus{border-color:#a99cf4;box-shadow:0 0 0 3px #7564e612}
+.profile-settings-form input[readonly]{background:#f6f6fa;color:#8c92a8;cursor:not-allowed}
+.profile-settings-form label small{color:#9298ad;font-size:9px;font-weight:500}
+.profile-settings-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:3px}
+.profile-settings-actions .button{min-height:40px;justify-content:center}
+.button-secondary{background:#f4f3fb;color:#625b91;border:1px solid #e9e5fb}
+.profile-feedback{margin:0;padding:10px 12px;border-radius:9px;background:#fff0f0;color:#b33e4d;font-size:11px;line-height:1.5}
+.profile-feedback.success{background:#ecfaf3;color:#21865a}
+.profile-signin-prompt{margin-top:18px;padding:22px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.profile-signin-prompt p{margin:0;color:#777e96;font-size:12px;line-height:1.7}
+@media(max-width:600px){.profile-settings-form{padding:16px}.profile-settings-actions{display:grid;grid-template-columns:1fr}.profile-settings-actions .button{width:100%}}
