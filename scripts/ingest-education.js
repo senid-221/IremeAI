@@ -13,9 +13,10 @@ if (!DATABASE_URL) {
 const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 40), 1), 200)
 const MAX_CHARS = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_CHARS || 1500000), 10000), 5000000)
 const TIMEOUT_MS = 25000
-const INDEXER_BUILD = '2026-10-12-retry-3'
+const INDEXER_BUILD = '2026-10-12-level3-pdf-1'
 const USER_AGENT = 'IremeAI-EducationIndexer/1.0 (official education resource indexing; contact site administrator)'
 const sources = [
+  { publisher: 'Rwanda TVET Board', title: 'Publication of TVET Curricula for 2023-2024 School Year', url: 'https://www.nrs.gov.rw/fileadmin/user_upload/nrs2024/Publication_of_TVET_curricula_for_2023-2024_school_year-RTB_september.pdf', level: 'TVET Levels 1-5', type: 'tvet_module' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB Curriculum, Teaching and Learning Resources', url: 'https://www.reb.gov.rw/curriculum-teaching-learning-resources-department', level: 'Nursery, Primary P1-P6, Secondary S1-S6', type: 'curriculum' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB E-Learning', url: 'https://elearning.reb.rw/', level: 'Primary P1-P6, Secondary S1-S6', type: 'textbook' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB Publications', url: 'https://www.reb.gov.rw/publications', level: 'Basic education', type: 'teacher_guide' },
