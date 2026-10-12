@@ -95,16 +95,16 @@ async function fetchPage(url) {
 }
 function inferMetadata(source, page) {
   const label = (page.title + ' ' + page.url.split('/').pop()).replace(/[_-]+/g, ' ').toUpperCase()
-  const grade = label.match(/\\b(P[1-6]|S[1-6]|N[1-3])\\b/)
-  const tvet = label.match(/\\b(?:TVET\\s*)?(?:LEVEL|L)\\s*([1-5])\\b/)
+  const grade = label.match(/\b(P[1-6]|S[1-6]|N[1-3])\b/)
+  const tvet = label.match(/\b(?:TVET\\s*)?(?:LEVEL|L)\\s*([1-5])\b/)
   const subjects = [
-    ['Mathematics', /\\b(MATHEMATICS|MATHS?)\\b/], ['Kinyarwanda', /\\bKINYARWANDA\\b/], ['English', /\\bENGLISH\\b/],
-    ['French', /\\bFRENCH\\b/], ['Kiswahili', /\\b(KISWAHILI|SWAHILI)\\b/], ['Physics', /\\bPHYSICS\\b/],
-    ['Chemistry', /\\bCHEMISTRY\\b/], ['Biology', /\\bBIOLOGY\\b/], ['Science and Technology', /\\b(SCIENCE|SET)\\b/],
-    ['Social Studies', /\\b(SOCIAL STUDIES|SST)\\b/], ['Geography', /\\bGEOGRAPHY\\b/], ['History', /\\bHISTORY\\b/],
-    ['Entrepreneurship', /\\b(ENTREPRENEURSHIP|BUSINESS)\\b/], ['ICT', /\\b(ICT|INFORMATION TECHNOLOGY)\\b/],
-    ['Computer Science', /\\b(COMPUTER SCIENCE|COMPUTING|CODING)\\b/], ['Agriculture', /\\b(AGRICULTURE|AGRIC)\\b/],
-    ['Fine Art', /\\b(FINE ART|ART AND CRAFT|CREATIVE ARTS)\\b/], ['Music', /\\bMUSIC\\b/],
+    ['Mathematics', /\b(MATHEMATICS|MATHS?)\b/], ['Kinyarwanda', /\bKINYARWANDA\b/], ['English', /\bENGLISH\b/],
+    ['French', /\bFRENCH\b/], ['Kiswahili', /\b(KISWAHILI|SWAHILI)\b/], ['Physics', /\bPHYSICS\b/],
+    ['Chemistry', /\bCHEMISTRY\b/], ['Biology', /\bBIOLOGY\b/], ['Science and Technology', /\b(SCIENCE|SET)\b/],
+    ['Social Studies', /\b(SOCIAL STUDIES|SST)\b/], ['Geography', /\bGEOGRAPHY\b/], ['History', /\bHISTORY\b/],
+    ['Entrepreneurship', /\b(ENTREPRENEURSHIP|BUSINESS)\b/], ['ICT', /\b(ICT|INFORMATION TECHNOLOGY)\b/],
+    ['Computer Science', /\b(COMPUTER SCIENCE|COMPUTING|CODING)\b/], ['Agriculture', /\b(AGRICULTURE|AGRIC)\b/],
+    ['Fine Art', /\b(FINE ART|ART AND CRAFT|CREATIVE ARTS)\b/], ['Music', /\bMUSIC\b/],
   ]
   const subject = subjects.find(([, pattern]) => pattern.test(label))?.[0] || null
   return { level: grade?.[1] || (tvet ? 'TVET Level ' + tvet[1] : source.level), subject }
