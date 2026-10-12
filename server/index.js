@@ -2,10 +2,6 @@ import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { timingSafeEqual } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { configureAuth, requireAuth, requireRole } from './auth.js'
 import { officialEducationSources } from './education-catalog.js'
@@ -64,66 +60,6 @@ app.get('/api/health', (_req, res) => {
     authConfigured: auth.configured,
     timestamp: new Date().toISOString(),
   })
-})
-
-const execFileAsync = promisify(execFile)
-let educationSetupRunning = false
-
-// A temporary hPanel-only setup page. The secret is entered by the operator and never embedded in frontend assets.
-app.get('/education-setup', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'")
-  res.type('html').send(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ireme AI Education Setup</title><body style="font:16px system-ui;max-width:680px;margin:40px auto;padding:0 16px;color:#172033"><h1>Ireme AI Education Setup</h1><p>This protected tool applies the database migrations and indexes accessible official REB, NESA and RTB resources. It may take several minutes.</p><form id="setup"><label for="token">Education setup token from Hostinger environment variables</label><input id="token" type="password" autocomplete="off" required style="display:block;width:100%;padding:12px;margin:8px 0 16px;box-sizing:border-box"><button id="run" style="padding:12px 18px">Run database setup and ingestion</button></form><pre id="result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f8;padding:16px;border-radius:8px"></pre><script>document.getElementById('setup').addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('run'),o=document.getElementById('result'),t=document.getElementById('token').value;b.disabled=true;o.textContent='Running. Keep this page open; this can take several minutes.';try{const r=await fetch('/api/admin/education/setup',{method:'POST',headers:{'Authorization':'Bearer '+t,'Content-Type':'application/json'},body:'{}'});const d=await r.json();o.textContent=JSON.stringify(d,null,2);if(r.ok)document.getElementById('token').value='';}catch(e){o.textContent='Request failed: '+e.message;}finally{b.disabled=false;}});</script></body></html>`)
-})
-
-app.post('/api/admin/education/setup', async (req, res) => {
-  const configuredToken = process.env.EDUCATION_SETUP_TOKEN || ''
-  const suppliedToken = typeof req.headers.authorization === 'string' && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
-  if (!configuredToken || configuredToken.length < 32) return res.status(503).json({ error: 'Set EDUCATION_SETUP_TOKEN to a random secret of at least 32 characters in Hostinger hPanel, then redeploy.' })
-  const expected = Buffer.from(configuredToken)
-  const supplied = Buffer.from(suppliedToken)
-  if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) return res.status(401).json({ error: 'Invalid setup token.' })
-  if (educationSetupRunning) return res.status(409).json({ error: 'Education setup is already running.' })
-  const pool = req.app.locals.authPool
-  if (!pool) return res.status(503).json({ error: 'DATABASE_URL is not configured in Hostinger.' })
-  educationSetupRunning = true
-  const client = await pool.connect().catch(() => null)
-  if (!client) { educationSetupRunning = false; return res.status(503).json({ error: 'Could not connect to PostgreSQL. Check DATABASE_URL and database access.' }) }
-  try {
-    const exists = await client.query("SELECT to_regclass('public.schools') AS schools, to_regclass('public.users') AS users, to_regclass('public.subjects') AS subjects, to_regclass('public.learning_resources') AS learning_resources")
-    const schema = exists.rows[0]
-    if (!schema.schools && !schema.users && !schema.subjects && !schema.learning_resources) {
-      const sql = await readFile(path.resolve(here, '../db/migrations/001_initial_schema.sql'), 'utf8')
-      await client.query('BEGIN')
-      try { await client.query(sql); await client.query('COMMIT') } catch (error) { await client.query('ROLLBACK'); throw error }
-    } else if (!schema.schools || !schema.users || !schema.subjects || !schema.learning_resources) {
-      educationSetupRunning = false
-      return res.status(409).json({ error: 'Database schema is partially installed. For safety, automatic setup stopped without changing it. Review migrations 001–003 before retrying.' })
-    }
-    for (const file of ['002_learning_persistence_indexes.sql','003_student_library_and_schedule.sql','004_education_knowledge_base.sql']) {
-      const sql = await readFile(path.resolve(here, '../db/migrations', file), 'utf8')
-      await client.query('BEGIN')
-      try { await client.query(sql); await client.query('COMMIT') } catch (error) { await client.query('ROLLBACK'); throw error }
-    }
-    await client.query('SELECT 1')
-  } catch (error) {
-    console.error('Education migration failed:', error?.message || 'unknown error')
-    educationSetupRunning = false
-    return res.status(500).json({ error: 'Database setup failed. Review Hostinger deployment logs; no database credentials are returned.' })
-  } finally { client.release() }
-  try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [path.resolve(here, '../scripts/ingest-education.js')], {
-      cwd: path.resolve(here, '..'),
-      env: process.env,
-      timeout: 10 * 60 * 1000,
-      maxBuffer: 2 * 1024 * 1024,
-    })
-    return res.json({ ok: true, message: 'Migrations and official-source ingestion completed.', output: stdout.slice(-12000), warnings: stderr.slice(-4000) })
-  } catch (error) {
-    console.error('Education ingestion failed:', error?.message || 'unknown error')
-    return res.status(500).json({ ok: false, message: 'Database migrations completed, but ingestion did not finish successfully.', output: String(error.stdout || '').slice(-10000), warnings: String(error.stderr || error.message || '').slice(-3000) })
-  } finally { educationSetupRunning = false }
 })
 
 app.get('/api/education/sources', (_req, res) => {
