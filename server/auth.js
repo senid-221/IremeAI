@@ -77,8 +77,8 @@ export function configureAuth(app) {
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Enter a valid email address.' })
     }
-    if (password.length < 10 || password.length > 128) {
-      return res.status(400).json({ error: 'Password must be between 10 and 128 characters.' })
+    if (password.length < 10 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ error: 'Password must be at least 10 characters and no more than 72 UTF-8 bytes.' })
     }
 
     try {
@@ -108,7 +108,7 @@ export function configureAuth(app) {
   router.post('/login', async (req, res) => {
     const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
     const password = typeof req.body?.password === 'string' ? req.body.password : ''
-    if (!email || !password || email.length > 254 || password.length > 128) {
+    if (!email || !password || email.length > 254 || Buffer.byteLength(password, 'utf8') > 72) {
       return res.status(400).json({ error: 'Enter your email and password.' })
     }
 
