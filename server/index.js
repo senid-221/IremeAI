@@ -50,6 +50,7 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     service: 'ireme-education-agent',
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    webResearchConfigured: Boolean(process.env.EXA_API_KEY),
     authConfigured: auth.configured,
     timestamp: new Date().toISOString(),
   })
@@ -296,6 +297,28 @@ app.post('/api/ask', async (req, res) => {
       console.error('Education retrieval unavailable; continuing without DB context:', error?.message || 'unknown error')
     }
   }
+  // Live web research is optional; configure EXA_API_KEY on the server to enable it.
+  let researchResults = []
+  if (process.env.EXA_API_KEY) {
+    try {
+      const researchQuery = [question, subject ? 'Subject: ' + subject : '', 'Rwanda education REB NESA RTB official sources factual information'].filter(Boolean).join(' ')
+      const researchResponse = await fetch('https://api.exa.ai/search', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.EXA_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: researchQuery, type: 'auto', numResults: 6, contents: { text: { maxCharacters: 1800 }, highlights: { numSentences: 3, highlightsPerUrl: 2 } } }),
+        signal: AbortSignal.timeout(12_000),
+      })
+      if (!researchResponse.ok) {
+        console.error('Live research provider returned status', researchResponse.status)
+      } else {
+        const researchPayload = await researchResponse.json().catch(() => ({}))
+        researchResults = (Array.isArray(researchPayload.results) ? researchPayload.results : []).slice(0, 6).map(item => ({ title: typeof item.title === 'string' ? item.title.slice(0, 240) : 'Untitled source', url: typeof item.url === 'string' ? item.url.slice(0, 1000) : '', publishedDate: typeof item.publishedDate === 'string' ? item.publishedDate : null, text: typeof item.text === 'string' ? item.text.slice(0, 4500) : '', highlights: Array.isArray(item.highlights) ? item.highlights.filter(value => typeof value === 'string').slice(0, 3) : [] })).filter(item => item.url && (item.text || item.highlights.length))
+      }
+    } catch (error) {
+      console.error('Live research unavailable; continuing with available context:', error?.message || 'unknown error')
+    }
+  }
+
   const languageName = language === 'rw' ? 'Kinyarwanda' : 'English'
   const systemPrompt = [
     'IDENTITY AND MISSION: You are Ireme AI, a Rwanda-focused educational tutor. Align teaching with Rwanda’s official Competence-Based Curriculum (CBC). Use REB as the primary authority for nursery, primary and general secondary curriculum, syllabi, textbooks, teacher guides and learning materials; use RTB as the primary authority for TVET curricula, trades, modules and qualification levels 1–5; use NESA for assessment standards, comprehensive assessments, national examinations, official model questions, examination rules and published timetables. Include academic subjects, IT/ICT and computer science, and arts/creative fields such as fine art, graphic art, fashion, multimedia, music and performing arts when relevant to the learner’s programme. These institutions have different roles; do not describe NESA as the publisher of every textbook or curriculum.',
@@ -309,7 +332,11 @@ app.post('/api/ask', async (req, res) => {
     'ASSESSMENT INTEGRITY: Create original practice questions aligned to the requested level and topic, label them as Ireme AI practice—not official NESA questions—and provide worked solutions or a marking rubric. Never claim a generated paper is an official past paper. During an active exam, support learning without facilitating cheating.',
     'ANSWER QUALITY: Teach concepts instead of only giving homework answers. Show calculations and reasoning step by step. If a question is ambiguous, ask a concise clarifying question. Correct misconceptions kindly. Do not invent curriculum requirements, school records, marks, results or citations.',
     'PRIVACY AND SAFEGUARDING: Do not request unnecessary personal data. For student safety or serious wellbeing concerns, respond supportively and recommend a trusted adult or qualified professional.',
-    educationContext.length ? 'EDUCATION DATABASE CONTEXT (retrieved from verified PostgreSQL entries; cite only supplied metadata):\n' + educationContext.map(item => '[' + item.publisher + ' | ' + item.title + ' | ' + (item.education_level || 'level not specified') + ' | ' + (item.subject_name || 'subject not specified') + ' | ' + (item.academic_year || 'year not specified') + '] ' + (item.heading || '') + ': ' + item.content + ' Source: ' + item.source_url).join('\n\n') : 'EDUCATION DATABASE CONTEXT: No matching verified excerpts found. Do not claim retrieval from a textbook or past paper; link official sources and label general explanations.',
+    'RESEARCH STANDARD: Research factual, curriculum, exam, school, science, technology, history or current-affairs questions before teaching when web results are provided. Compare at least two independent credible sources when possible. For Rwanda education, prefer official REB, NESA, RTB and government sources. Prioritize recent sources for current rules and dates. If sources conflict, explain the conflict and prefer the responsible official authority. Search results are not automatically true; assess authority, date and relevance.',
+    'CITATIONS: Cite factual claims with source titles and clickable full URLs in Markdown near the relevant claim. Include publication dates when supplied. Separate verified facts from inference and original teaching examples. If live research was unavailable, say sources could not be checked live and do not pretend otherwise.',
+    'SCHOOL DIRECTORY: Third-party directories are discovery tools, not necessarily official government registers. Do not claim a list is complete unless independently verified.',
+    researchResults.length ? 'WEB RESEARCH RESULTS (evaluate reliability; cite source URLs):\n' + researchResults.map((item, index) => '[' + (index + 1) + '] ' + item.title + ' | ' + item.url + ' | Published: ' + (item.publishedDate || 'date not supplied') + '\n' + item.text + (item.highlights.length ? '\nHighlights: ' + item.highlights.join(' | ') : '')).join('\n\n') : 'WEB RESEARCH RESULTS: No live web results were available for this request. Do not claim live research was completed.',
+        educationContext.length ? 'EDUCATION DATABASE CONTEXT (retrieved from verified PostgreSQL entries; cite only supplied metadata):\n' + educationContext.map(item => '[' + item.publisher + ' | ' + item.title + ' | ' + (item.education_level || 'level not specified') + ' | ' + (item.subject_name || 'subject not specified') + ' | ' + (item.academic_year || 'year not specified') + '] ' + (item.heading || '') + ': ' + item.content + ' Source: ' + item.source_url).join('\n\n') : 'EDUCATION DATABASE CONTEXT: No matching verified excerpts found. Do not claim retrieval from a textbook or past paper; link official sources and label general explanations.',
     subject ? 'The learner selected this subject: ' + subject + '.' : '',
   ].filter(Boolean).join('\\n')
 
@@ -364,7 +391,7 @@ app.post('/api/ask', async (req, res) => {
         return res.status(503).json({ error: 'The answer was generated, but it could not be saved to your account.', code: 'CONVERSATION_SAVE_FAILED', answer: answer.trim() })
       }
     }
-    return res.json({ answer: answer.trim(), language, subject: subject || null, conversationId })
+    return res.json({ answer: answer.trim(), language, subject: subject || null, conversationId, researchUsed: researchResults.length > 0, sources: researchResults.map(({ title, url, publishedDate }) => ({ title, url, publishedDate })) })
   } catch (error) {
     const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError'
     console.error('AI request failed:', timedOut ? 'timeout' : error?.message || 'unknown error')
