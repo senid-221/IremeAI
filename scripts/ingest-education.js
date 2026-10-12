@@ -13,7 +13,7 @@ if (!DATABASE_URL) {
 const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 40), 1), 200)
 const MAX_CHARS = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_CHARS || 1500000), 10000), 5000000)
 const TIMEOUT_MS = 25000
-const INDEXER_BUILD = '2026-10-12-level3-pdf-1'
+const INDEXER_BUILD = '2026-10-12-level3-pdf-2'
 const USER_AGENT = 'IremeAI-EducationIndexer/1.0 (official education resource indexing; contact site administrator)'
 const sources = [
   { publisher: 'Rwanda TVET Board', title: 'Publication of TVET Curricula for 2023-2024 School Year', url: 'https://www.nrs.gov.rw/fileadmin/user_upload/nrs2024/Publication_of_TVET_curricula_for_2023-2024_school_year-RTB_september.pdf', level: 'TVET Levels 1-5', type: 'tvet_module' },
@@ -27,7 +27,7 @@ const sources = [
   { publisher: 'Rwanda TVET Board', title: 'RTB Publications', url: 'https://www.rtb.gov.rw/publications', level: 'TVET', type: 'teacher_guide' },
 ]
 const allowedOfficialRoots = ['reb.gov.rw', 'reb.rw', 'nesa.gov.rw', 'rtb.gov.rw']
-const allowedOfficialHosts = new Set(['www.reb.gov.rw', 'reb.gov.rw', 'elearning.reb.rw', 'www.nesa.gov.rw', 'nesa.gov.rw', 'www.rtb.gov.rw', 'rtb.gov.rw', 'tvetmanagement.rtb.gov.rw', 'elearning.rtb.gov.rw', 'www.elearning.rtb.gov.rw', 'curricula.rtb.gov.rw', 'nrs.gov.rw'])
+const allowedOfficialHosts = new Set(['www.reb.gov.rw', 'reb.gov.rw', 'elearning.reb.rw', 'www.nesa.gov.rw', 'nesa.gov.rw', 'www.rtb.gov.rw', 'rtb.gov.rw', 'tvetmanagement.rtb.gov.rw', 'elearning.rtb.gov.rw', 'www.elearning.rtb.gov.rw', 'curricula.rtb.gov.rw', 'nrs.gov.rw', 'www.nrs.gov.rw'])
 function isAllowedOfficialHost(hostname) {
   const host = hostname.toLowerCase().replace(/\.$/, '')
   return allowedOfficialHosts.has(host) || allowedOfficialRoots.some(root => host === root || host.endsWith('.' + root))
@@ -158,6 +158,7 @@ async function main() {
   console.log('INDEXER_BUILD:', INDEXER_BUILD)
   console.log('Ireme AI official-source HTML/PDF indexing started.')
   console.log('Limit:', MAX_PAGES, 'pages; maximum extracted text:', MAX_CHARS, 'characters.')
+  console.log('Direct curriculum PDF source enabled:', sources[0].url)
   try {
     for (const source of sources) {
       const queue = [source.url]
