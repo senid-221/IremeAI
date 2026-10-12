@@ -166,3 +166,10 @@ Official source portals:
 - NESA resources: https://www.nesa.gov.rw/1/resources
 - RTB curriculum portal: https://tvetmanagement.rtb.gov.rw/curricula
 - RTB e-learning: https://www.elearning.rtb.gov.rw/course/index.php?categoryid=4
+
+
+## One-time education setup from Hostinger hPanel
+
+A protected page at `/education-setup` can apply the database migrations and run the official-source indexer from the running Node.js server. In Hostinger's Node.js app dashboard, add `EDUCATION_SETUP_TOKEN` with a unique random secret of at least 32 characters, keep `DATABASE_URL` configured, and redeploy. Open `https://YOUR-DOMAIN/education-setup`, enter that secret, and run the setup. The secret is not embedded in the frontend bundle. The endpoint is disabled unless the secret is configured and rejects invalid secrets. It applies migration 001 only when the base schema is absent, stops if it detects a partially installed base schema, then applies migrations 002–004 and starts ingestion.
+
+After the run, review the output and verify results with `/api/education/search?q=mathematics&level=P1`. Remove `EDUCATION_SETUP_TOKEN` from Hostinger and redeploy after setup. This imports only accessible HTML and text-based PDFs within configured limits; it does not prove full syllabus coverage. Never share the setup secret in chat.
