@@ -12,6 +12,7 @@ const migrationFiles = [
   'db/migrations/002_learning_persistence_indexes.sql',
   'db/migrations/003_student_library_and_schedule.sql',
   'db/migrations/004_education_knowledge_base.sql',
+  'db/migrations/005_assessments_and_quizzes.sql',
 ]
 let job = { state: 'idle', startedAt: null, finishedAt: null, logs: [], error: null }
 
@@ -69,10 +70,12 @@ async function applyMigrations() {
         to_regclass('public.users') IS NOT NULL AS users_ready,
         to_regclass('public.education_documents') IS NOT NULL AS documents_ready,
         to_regclass('public.education_document_chunks') IS NOT NULL AS chunks_ready,
-        to_regclass('public.subjects') IS NOT NULL AS subjects_ready
+        to_regclass('public.subjects') IS NOT NULL AS subjects_ready,
+        to_regclass('public.assessments') IS NOT NULL AS assessments_ready,
+        to_regclass('public.assessment_questions') IS NOT NULL AS assessment_questions_ready
     `)
     if (!Object.values(verify.rows[0]).every(Boolean)) throw new Error('Database verification failed: required education tables are missing.')
-    log('Database verification passed: users, subjects and education knowledge-base tables exist.')
+    log('Database verification passed: users, subjects, education knowledge-base and assessment tables exist.')
   } finally {
     await pool.end()
   }
