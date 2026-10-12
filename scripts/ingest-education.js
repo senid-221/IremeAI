@@ -13,7 +13,7 @@ if (!DATABASE_URL) {
 const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 40), 1), 200)
 const MAX_CHARS = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_CHARS || 1500000), 10000), 5000000)
 const TIMEOUT_MS = 25000
-const INDEXER_BUILD = '2026-10-12-level3-pdf-2'
+const INDEXER_BUILD = '2026-10-12-level3-pdf-3'
 const USER_AGENT = 'IremeAI-EducationIndexer/1.0 (official education resource indexing; contact site administrator)'
 const sources = [
   { publisher: 'Rwanda TVET Board', title: 'Publication of TVET Curricula for 2023-2024 School Year', url: 'https://www.nrs.gov.rw/fileadmin/user_upload/nrs2024/Publication_of_TVET_curricula_for_2023-2024_school_year-RTB_september.pdf', level: 'TVET Levels 1-5', type: 'tvet_module' },
@@ -90,16 +90,23 @@ async function fetchPage(url) {
     try { redirectHost = new URL(response.url).hostname } catch {}
     throw new Error('Redirected to a host outside the official allowlist: ' + redirectHost)
   }
-  const type = response.headers.get('content-type') || ''
-  if (type.includes('application/pdf') || finalUrl.toLowerCase().split('?')[0].endsWith('.pdf')) {
-    const buffer = Buffer.from(await response.arrayBuffer())
-    if (buffer.length > 25 * 1024 * 1024) throw new Error('PDF exceeds 25 MB safety limit')
+  const type = (response.headers.get('content-type') || '').toLowerCase()
+  // Read once and identify PDFs by their file signature as well as URL/content-type.
+  // Some official government servers deliver PDFs as application/octet-stream or redirect to extensionless URLs.
+  const buffer = Buffer.from(await response.arrayBuffer())
+  if (buffer.length > 25 * 1024 * 1024) throw new Error('Resource exceeds 25 MB safety limit')
+  const looksLikePdf = buffer.subarray(0, 1024).includes(Buffer.from('%PDF-'))
+  if (type.includes('application/pdf') || finalUrl.toLowerCase().split('?')[0].endsWith('.pdf') || looksLikePdf) {
+    if (!looksLikePdf && !type.includes('application/pdf') && !finalUrl.toLowerCase().split('?')[0].endsWith('.pdf')) {
+      throw new Error('PDF signature not found')
+    }
     const parsed = await pdfParse(buffer)
     const text = String(parsed.text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 150000)
+    if (text.length < 250) throw new Error('PDF downloaded but contains too little extractable text; it may be scanned or image-only')
     return { url: finalUrl, title: String(parsed.info?.Title || finalUrl.split('/').pop() || 'Official PDF').slice(0, 240), text, links: [], language: 'en' }
   }
-  if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type)
-  const html = await response.text()
+  if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type + '; final URL: ' + finalUrl)
+  const html = buffer.toString('utf8')
   const text = cleanHtml(html).slice(0, 60000)
   const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
   return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en' }
