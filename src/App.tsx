@@ -70,7 +70,6 @@ export default function App() {
   const [showSessionForm, setShowSessionForm] = useState(false)
   const [sessionTitle, setSessionTitle] = useState('')
   const [customSessions, setCustomSessions] = useState<StudySession[]>([])
-  const [savedResourceError, setSavedResourceError] = useState('')
   const [scheduleError, setScheduleError] = useState('')
   const [user, setUser] = useState<AccountUser | null>(null)
   const [authOpen, setAuthOpen] = useState(false)
