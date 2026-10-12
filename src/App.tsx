@@ -306,7 +306,7 @@ export default function App() {
     <div className="app-shell">
       <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
         <a className="brand" href="#" aria-label="Ireme AI home">
-          <span className="brand-mark" aria-hidden="true"><BookOpenCheck className="brand-mark-icon" size={38} strokeWidth={1.8} /></span>
+          <span className="brand-mark" aria-hidden="true"><img src="/ireme-mark.svg" alt="" /></span>
           <span className="brand-copy"><strong>Ireme<span>AI</span></strong><small>LEARN WITHOUT LIMITS</small></span>
         </a>
         <div className="school-chip"><span className="school-avatar"><BookOpen size={17}/></span><span><b>{user?.fullName || (lang === 'rw' ? 'Umwanya w’umunyeshuri' : 'Student workspace')}</b><small>{user?.gradeLevel || (lang === 'rw' ? 'Ireme AI' : 'Ireme AI')}</small></span></div>
@@ -341,7 +341,7 @@ export default function App() {
 
           <motion.section className="hero-banner" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:.08,duration:.5}}>
             <div className="hero-copy"><div className="hero-pill"><BrainCircuit size={13}/> YOUR AI STUDY PARTNER</div><h2>{t.welcome}</h2><p>{t.welcomeSub}</p><div className="hero-actions"><button className="button button-white" onClick={() => document.getElementById('ask-ireme')?.focus()}>{t.start}<ArrowRight size={16}/></button><button className="button button-glass" onClick={() => {setActive('learn');window.scrollTo({top:0,behavior:'smooth'})}}><Play size={15} fill="currentColor"/> {t.explore}</button></div><div className="hero-trust"><span><ShieldCheck size={14}/> Curriculum-aware</span><span><Zap size={14}/> Personalized learning</span></div></div>
-            <div className="hero-art brand-hero-art" aria-label="Ireme AI learning"><BookOpenCheck className="hero-brand-logo" size={74} strokeWidth={1.5} aria-label="Ireme learning icon" /><div className="hero-brand-copy"><b>Your AI Learning Partner</b><span>Learn. Practice. Improve. Achieve.</span></div><div className="hero-book-icons"><BookOpen size={28}/><FileText size={28}/><BarChart3 size={28}/><CalendarDays size={28}/></div></div>
+            <div className="hero-art brand-hero-art" aria-label="Ireme AI learning"><img className="hero-brand-logo" src="/ireme-logo.svg" alt="Ireme — Inclusive Education for a Brighter Tomorrow" /></div>
           </motion.section>
 
           <section className="stats-grid">
