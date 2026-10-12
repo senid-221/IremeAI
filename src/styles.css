@@ -190,3 +190,50 @@ body{font-size:16px;color:#17233d}
   .timeline-item b{font-size:12px}
   .button{font-size:12px}
 }
+
+
+/* High-contrast text pass: use solid black on light surfaces, retain white on dark/blue surfaces */
+:root{color:#000}
+body,.main-area{color:#000}
+.sidebar{color:#fff}
+.nav-label{color:#fff}
+.nav-item{color:#fff}
+.nav-item:hover,.nav-item.active{color:#fff}
+.school-chip b,.profile-mini b{color:#fff}
+.school-chip small,.profile-mini small{color:#fff}
+.sidebar-card>b,.sidebar-card p,.sidebar-card>small{color:#000}
+.breadcrumb{color:#000}
+.breadcrumb b{color:#000}
+.welcome-row h1,.welcome-row p,.eyebrow,.section-kicker,
+.section-heading h3,.ask-heading h3,.ask-heading p,
+.stat-label,.stat-number,.stat-number small,.subject-title-row h4,
+.subject-info p,.progress-foot>span,.summary-copy>b,.summary-copy p,
+.chart-head b,.chart-head span,.timeline-item b,.timeline-item small,
+.task-tag,.page-heading h2,.page-heading p,.page-chip,
+.learning-card h3,.learning-card p,.resource-content h3,.resource-content p,
+.learning-card-foot>span,.learning-tip b,.learning-tip p,
+.progress-detail,.large-progress-number,.schedule-date b,.schedule-date small,
+.schedule-row>div b,.schedule-row>div small,.help-item summary,.help-item p,
+.account-button,.account-panel-heading h3,.account-panel-heading p,
+.account-form label,.account-switch,.history-heading>b,.history-item,
+.history-item b,.history-item small,.history-empty,.profile-settings-intro h3,
+.profile-settings-intro p,.profile-settings-form>label,.profile-settings-form label small,
+.profile-signin-prompt p,.demo-disclaimer,.footer{color:#000}
+.text-link,.progress-foot button,.account-switch button,.resource-tag,.tip-icon,
+.schedule-date,.schedule-status,.insight-line{color:#000}
+.search-box,.search-box input,.search-box kbd,.language-switch,.icon-button{color:#000}
+.subject-category{color:#000}
+.suggestion-row button,.ask-input input,.ask-input input::placeholder{color:#000;opacity:1}
+.privacy-note,.online-badge,.footer-status{color:#000}
+.account-logout{color:#000}
+.account-error,.profile-feedback{color:#000}
+.save-button,.profile-settings-actions .button-secondary{color:#000}
+.transcript-message.from-ai{color:#000}
+.transcript-message.from-ai b{color:#000}
+.button-primary,.button-primary:hover,.send-button,.send-button:hover,
+.add-task,.nav-item.active,.button-glass{color:#fff}
+.button-white{color:#0756b8}
+@media(max-width:650px){
+  .welcome-row p,.page-heading p,.hero-copy p{color:#000}
+  .hero-copy p,.hero-copy h2,.hero-pill,.hero-trust,.hero-brand-copy,.hero-brand-copy span{color:#fff}
+}
