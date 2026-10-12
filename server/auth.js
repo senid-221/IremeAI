@@ -163,6 +163,33 @@ export function configureAuth(app) {
     }
   })
 
+  router.post('/profile', async (req, res) => {
+    if (!req.session?.userId) return res.status(401).json({ error: 'Please sign in to update your profile.' })
+    const fullName = typeof req.body?.fullName === 'string' ? req.body.fullName.trim() : ''
+    const gradeLevel = typeof req.body?.gradeLevel === 'string' ? req.body.gradeLevel.trim() : ''
+    const preferredLanguage = req.body?.preferredLanguage === 'rw' ? 'rw' : req.body?.preferredLanguage === 'en' ? 'en' : null
+
+    if (fullName.length < 2 || fullName.length > 160) {
+      return res.status(400).json({ error: 'Full name must be between 2 and 160 characters.' })
+    }
+    if (gradeLevel.length > 40) return res.status(400).json({ error: 'Grade level must be 40 characters or fewer.' })
+    if (!preferredLanguage) return res.status(400).json({ error: 'Choose English or Kinyarwanda.' })
+
+    try {
+      const result = await pool.query(
+        `UPDATE users SET full_name = $2, grade_level = NULLIF($3, ''), preferred_language = $4, updated_at = now()
+         WHERE id = $1 AND status = 'active'
+         RETURNING id, full_name, email, role, status, preferred_language, grade_level, school_id`,
+        [req.session.userId, fullName, gradeLevel, preferredLanguage],
+      )
+      if (!result.rowCount) return res.status(401).json({ error: 'Your account is no longer active.' })
+      return res.json({ user: publicUser(result.rows[0]) })
+    } catch (error) {
+      console.error('Profile update failed:', error?.message || 'unknown error')
+      return res.status(500).json({ error: 'Could not save your profile right now.' })
+    }
+  })
+
   router.post('/logout', (req, res) => {
     if (!req.session) return res.status(204).end()
     req.session.destroy(error => {
