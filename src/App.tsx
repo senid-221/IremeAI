@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck,
-  CalendarDays, Check, ChevronDown, ChevronRight, CircleHelp, Clock3, Compass,
-  GraduationCap, Languages, LayoutDashboard, Lightbulb, Menu, MessageCircle,
-  Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2, ShieldCheck,
-  Sparkles, Target, TrendingUp, Users, WandSparkles, X, Zap
+  ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
+  ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
+  Lightbulb, Menu, Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2,
+  ShieldCheck, Sparkles, Target, TrendingUp, WandSparkles, Zap
 } from 'lucide-react'
 
 type Lang = 'en' | 'rw'
@@ -130,7 +129,7 @@ export default function App() {
           <div className="dashboard-grid">
             <section className="panel subjects-panel">
               <div className="section-heading"><div><span className="section-kicker">KEEP THE MOMENTUM</span><h3>{t.subjects}</h3></div><button className="text-link" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show less' : t.seeAll}<ArrowRight size={15}/></button></div>
-              <div className="subject-list">{(showAll ? [...localizedSubjects,{...subjects[0],name:'Physics',rw:'Ubugenge',category:'SCIENCE',color:'blue',icon:'Φ',progress:34,lessons:'5 of 15 lessons',displayName:lang==='rw'?'Ubugenge':'Physics'}] : localizedSubjects).map((s,i)=><motion.article className="subject-card" key={s.name} whileHover={{y:-3}} transition={{duration:.2}}><div className={`subject-art ${s.color}`}><img src={s.image} alt="" loading="lazy"/><span className="subject-symbol">{s.icon}</span><span className="subject-category">{s.category}</span></div><div className="subject-info"><div className="subject-title-row"><h4>{s.displayName}</h4><button className="tiny-more" aria-label={`More about ${s.displayName}`}><MoreHorizontal size={17}/></button></div><p>{s.lessons}</p><div className="progress-track"><span style={{width:`${s.progress}%`}}/></div><div className="progress-foot"><span>{s.progress}% complete</span><button onClick={() => {setQuestion(lang==='rw' ? 'Mfasha kwiga '+s.rw : 'Help me study '+s.name); document.getElementById('ask-ireme')?.focus()}}>{t.lesson}<ArrowUpRight size={14}/></button></div></div></motion.article>)}</div>
+              <div className="subject-list">{(showAll ? [...localizedSubjects,{...subjects[0],name:'Physics',rw:'Ubugenge',category:'SCIENCE',color:'blue',icon:'Φ',progress:34,lessons:'5 of 15 lessons',displayName:lang==='rw'?'Ubugenge':'Physics'}] : localizedSubjects).map(s=><motion.article className="subject-card" key={s.name} whileHover={{y:-3}} transition={{duration:.2}}><div className={`subject-art ${s.color}`}><img src={s.image} alt="" loading="lazy"/><span className="subject-symbol">{s.icon}</span><span className="subject-category">{s.category}</span></div><div className="subject-info"><div className="subject-title-row"><h4>{s.displayName}</h4><button className="tiny-more" aria-label={`More about ${s.displayName}`}><MoreHorizontal size={17}/></button></div><p>{s.lessons}</p><div className="progress-track"><span style={{width:`${s.progress}%`}}/></div><div className="progress-foot"><span>{s.progress}% complete</span><button onClick={() => {setQuestion(lang==='rw' ? 'Mfasha kwiga '+s.rw : 'Help me study '+s.name); document.getElementById('ask-ireme')?.focus()}}>{t.lesson}<ArrowUpRight size={14}/></button></div></div></motion.article>)}</div>
             </section>
 
             <section className="panel progress-panel">
