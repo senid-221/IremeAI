@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
 import {
   ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
   ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
@@ -49,7 +50,7 @@ const copy = {
   }
 }
 
-const subjects: Array<{name:string;rw:string;category:string;color:string;icon:string;progress:number;lessons:string;image:string}> = []
+const subjects: Array<{name:string;rw:string;category:string;color:string;icon:LucideIcon;progress:number;lessons:string;image:string}> = []
 
 const navItems = [
   { key: 'home', icon: LayoutDashboard }, { key: 'learn', icon: BookOpen },
@@ -350,7 +351,7 @@ export default function App() {
           <div className="dashboard-grid">
             <section className="panel subjects-panel">
               <div className="section-heading"><div><span className="section-kicker">KEEP THE MOMENTUM</span><h3>{t.subjects}</h3></div><button className="text-link" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show less' : t.seeAll}<ArrowRight size={15}/></button></div>
-              <div className="subject-list">{(localizedSubjects).map(s=><motion.article className="subject-card" key={s.name} whileHover={{y:-3}} transition={{duration:.2}}><div className={`subject-art ${s.color}`}><img src={s.image} alt="" loading="lazy"/><span className="subject-symbol">{s.icon}</span><span className="subject-category">{s.category}</span></div><div className="subject-info"><div className="subject-title-row"><h4>{s.displayName}</h4><button className="tiny-more" aria-label={`More about ${s.displayName}`}><MoreHorizontal size={17}/></button></div><p>{s.lessons}</p><div className="progress-track"><span style={{width:`${s.progress}%`}}/></div><div className="progress-foot"><span>{s.progress}% complete</span><button onClick={() => {setQuestion(lang==='rw' ? 'Mfasha kwiga '+s.rw : 'Help me study '+s.name); document.getElementById('ask-ireme')?.focus()}}>{t.lesson}<ArrowUpRight size={14}/></button></div></div></motion.article>)}</div>
+              <div className="subject-list">{(localizedSubjects).map(s=><motion.article className="subject-card" key={s.name} whileHover={{y:-3}} transition={{duration:.2}}><div className={`subject-art ${s.color}`}><img src={s.image} alt="" loading="lazy"/><span className="subject-symbol" aria-hidden="true"><s.icon size={22} strokeWidth={2} /></span><span className="subject-category">{s.category}</span></div><div className="subject-info"><div className="subject-title-row"><h4>{s.displayName}</h4><button className="tiny-more" aria-label={`More about ${s.displayName}`}><MoreHorizontal size={17}/></button></div><p>{s.lessons}</p><div className="progress-track"><span style={{width:`${s.progress}%`}}/></div><div className="progress-foot"><span>{s.progress}% complete</span><button onClick={() => {setQuestion(lang==='rw' ? 'Mfasha kwiga '+s.rw : 'Help me study '+s.name); document.getElementById('ask-ireme')?.focus()}}>{t.lesson}<ArrowUpRight size={14}/></button></div></div></motion.article>)}</div>
             </section>
 
             <section className="panel progress-panel">
