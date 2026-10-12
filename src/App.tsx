@@ -260,10 +260,29 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q, language: lang, ...(user && conversationId ? { conversationId } : {}) }),
       })
-      const payload = await response.json().catch(() => ({}))
+      const contentType = response.headers.get('content-type') || ''
+      const payload = contentType.includes('application/json')
+        ? await response.json().catch(() => ({}))
+        : {}
       if (!response.ok) {
-        const message = typeof payload?.error === 'string' ? payload.error : (lang === 'rw' ? 'Ireme AI ntishoboye gusubiza ubu. Ongera ugerageze.' : 'Ireme AI could not answer right now. Please try again.')
+        const message = typeof payload?.error === 'string'
+          ? payload.error
+          : response.status === 404
+            ? (lang === 'rw'
+                ? 'Seriveri ya Ireme API ntibonetse (404). Ongera ushyireho deployment ya Node.js ukoresheje npm start.'
+                : 'Ireme API route was not found (404). Redeploy the Node.js app with the npm start command.')
+            : response.status >= 500
+              ? (lang === 'rw'
+                  ? 'Seriveri ya Ireme yahuye n’ikibazo. Reba application logs za Hostinger.'
+                  : 'The Ireme server returned an error. Check the Hostinger application logs.')
+              : (lang === 'rw' ? 'Ireme AI ntishoboye gusubiza ubu. Ongera ugerageze.' : 'Ireme AI could not answer right now. Please try again.')
         setAnswer(lang === 'rw' && payload?.code === 'AI_NOT_CONFIGURED' ? 'Serivisi ya AI ntirashyirwaho. Shyira OPENAI_API_KEY mu mabanga ya server kugira ngo utangire.' : message)
+        return
+      }
+      if (!contentType.includes('application/json')) {
+        setAnswer(lang === 'rw'
+          ? 'Seriveri yasubije page aho gusubiza JSON ya API. Reba ko Node.js backend ikora kandi ko npm start ikoresha server.js.'
+          : 'The server returned a webpage instead of API JSON. Check that the Node.js backend is running and npm start launches server.js.')
         return
       }
       setAnswer(typeof payload?.answer === 'string' ? payload.answer : (lang === 'rw' ? 'Nta gisubizo cyabonetse. Ongera ugerageze.' : 'No answer was returned. Please try again.'))
