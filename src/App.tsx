@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 
 type Lang = 'en' | 'rw'
+type AccountUser = { id: string; fullName: string; email: string; role: string; preferredLanguage: Lang }
+type Conversation = { id: string; title: string; language: Lang; message_count: number; updated_at: string }
+type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; created_at: string }
 const copy = {
   en: {
     greeting: 'Good morning, Aline 👋', subtitle: 'Ready to make today a great learning day?',
@@ -69,7 +72,115 @@ export default function App() {
   const [showSessionForm, setShowSessionForm] = useState(false)
   const [sessionTitle, setSessionTitle] = useState('')
   const [customSessions, setCustomSessions] = useState<string[]>([])
+  const [user, setUser] = useState<AccountUser | null>(null)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const [authName, setAuthName] = useState('')
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [authBusy, setAuthBusy] = useState(false)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [progressRecords, setProgressRecords] = useState<any[]>([])
   const t = copy[lang]
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(async response => response.ok ? response.json() : null)
+      .then(payload => {
+        if (!cancelled && payload?.user) {
+          setUser(payload.user)
+          setLang(payload.user.preferredLanguage === 'rw' ? 'rw' : lang)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setConversations([])
+      setProgressRecords([])
+      setConversationId(null)
+      setChatMessages([])
+      return
+    }
+    let cancelled = false
+    Promise.all([
+      fetch('/api/conversations', { credentials: 'same-origin' }),
+      fetch('/api/progress', { credentials: 'same-origin' }),
+    ]).then(async ([conversationResponse, progressResponse]) => {
+      const conversationPayload = conversationResponse.ok ? await conversationResponse.json() : { conversations: [] }
+      const progressPayload = progressResponse.ok ? await progressResponse.json() : { progress: [] }
+      if (!cancelled) {
+        setConversations(Array.isArray(conversationPayload.conversations) ? conversationPayload.conversations : [])
+        setProgressRecords(Array.isArray(progressPayload.progress) ? progressPayload.progress : [])
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [user])
+  
+  async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setAuthBusy(true)
+    setAuthError('')
+    try {
+      const response = await fetch('/api/auth/' + authMode, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(authMode === 'register' ? { fullName: authName.trim(), preferredLanguage: lang } : {}),
+          email: authEmail.trim(),
+          password: authPassword,
+        }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload?.user) {
+        setAuthError(typeof payload?.error === 'string' ? payload.error : (lang === 'rw' ? 'Konti ntiyafunguwe. Ongera ugerageze.' : 'Account request failed. Please try again.'))
+        return
+      }
+      setUser(payload.user)
+      setAuthPassword('')
+      setAuthOpen(false)
+      setAuthError('')
+    } catch {
+      setAuthError(lang === 'rw' ? 'Ntitwashoboye kugera kuri seriveri.' : 'Could not reach the Ireme server.')
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
+  async function signOut() {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch {}
+    setUser(null)
+    setAuthOpen(false)
+    setAnswer('')
+    setConversationId(null)
+    setChatMessages([])
+  }
+
+  async function openConversation(id: string) {
+    try {
+      const response = await fetch('/api/conversations/' + encodeURIComponent(id) + '/messages', { credentials: 'same-origin' })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(payload?.error || 'Could not load conversation.')
+      setConversationId(id)
+      setChatMessages(Array.isArray(payload.messages) ? payload.messages : [])
+      const lastAssistant = [...(payload.messages || [])].reverse().find((message: ChatMessage) => message.role === 'assistant')
+      setAnswer(lastAssistant?.content || '')
+      setHistoryOpen(false)
+      setActive('home')
+      document.getElementById('ask-ireme')?.focus()
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Could not load conversation.')
+      setAuthOpen(true)
+    }
+  }
   const localizedSubjects = useMemo(() => subjects.map(s => ({ ...s, displayName: lang === 'rw' ? s.rw : s.name })).filter(s => s.displayName.toLowerCase().includes(query.toLowerCase())), [lang, query])
 
   async function askAI(value = question) {
@@ -82,7 +193,7 @@ export default function App() {
       const response = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q, language: lang }),
+        body: JSON.stringify({ question: q, language: lang, ...(user && conversationId ? { conversationId } : {}) }),
       })
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -91,6 +202,14 @@ export default function App() {
         return
       }
       setAnswer(typeof payload?.answer === 'string' ? payload.answer : (lang === 'rw' ? 'Nta gisubizo cyabonetse. Ongera ugerageze.' : 'No answer was returned. Please try again.'))
+      if (typeof payload?.conversationId === 'string') setConversationId(payload.conversationId)
+      if (user) {
+        const [historyResponse, progressResponse] = await Promise.all([fetch('/api/conversations', { credentials: 'same-origin' }), fetch('/api/progress', { credentials: 'same-origin' })])
+        const historyPayload = historyResponse.ok ? await historyResponse.json() : { conversations: [] }
+        const progressPayload = progressResponse.ok ? await progressResponse.json() : { progress: [] }
+        setConversations(Array.isArray(historyPayload.conversations) ? historyPayload.conversations : [])
+        setProgressRecords(Array.isArray(progressPayload.progress) ? progressPayload.progress : [])
+      }
     } catch {
       setAnswer(lang === 'rw' ? 'Ntabwo twabashije kugera kuri serivisi ya AI. Reba ko server ikora, hanyuma wongere ugerageze.' : 'Could not reach the AI service. Check that the Ireme server is running, then try again.')
     } finally {
@@ -130,9 +249,10 @@ export default function App() {
             <label className="search-box"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.search}/><kbd>⌘ K</kbd></label>
             <button className="language-switch" onClick={() => setLang(lang === 'en' ? 'rw' : 'en')}><Languages size={16}/>{lang === 'en' ? 'EN' : 'RW'}<ChevronDown size={13}/></button>
             <button className="icon-button notification" aria-label="Notifications"><Bell size={19}/><i/></button>
-            <img className="top-avatar" src="https://cdn.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg" alt="Aline Mukamana"/>
+            {user ? <button className="account-button" onClick={signOut} title={lang === 'rw' ? 'Sohoka' : 'Sign out'}><span className="account-avatar">{user.fullName.slice(0,1).toUpperCase()}</span><span className="account-name">{user.fullName.split(' ')[0]}</span><span className="account-logout">{lang === 'rw' ? 'Sohoka' : 'Sign out'}</span></button> : <button className="account-button" onClick={() => {setAuthOpen(v => !v);setAuthError('')}}><span className="account-avatar"><ShieldCheck size={16}/></span><span className="account-name">{lang === 'rw' ? 'Injira' : 'Sign in'}</span></button>}
           </div>
         </header>
+        {authOpen && <section className="account-panel" aria-label={lang === 'rw' ? 'Konti' : 'Account'}><div className="account-panel-heading"><div><span className="section-kicker">IREME AI ACCOUNT</span><h3>{authMode === 'login' ? (lang === 'rw' ? 'Injira muri konti yawe' : 'Welcome back') : (lang === 'rw' ? 'Fungura konti y’umunyeshuri' : 'Create your student account')}</h3><p>{lang === 'rw' ? 'Bika ibiganiro byawe n’iterambere mu myigire.' : 'Save your tutor conversations and learning progress.'}</p></div><button className="tiny-more" onClick={() => setAuthOpen(false)} aria-label="Close account panel"><Plus size={18} style={{transform:'rotate(45deg)'}}/></button></div><form className="account-form" onSubmit={submitAuth}>{authMode === 'register' && <label>{lang === 'rw' ? 'Amazina yawe' : 'Full name'}<input value={authName} onChange={e=>setAuthName(e.target.value)} minLength={2} maxLength={160} autoComplete="name" required/></label>}<label>Email<input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} autoComplete="email" maxLength={254} required/></label><label>{lang === 'rw' ? 'Ijambo ry’ibanga' : 'Password'}<input type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} minLength={authMode === 'register' ? 10 : 1} maxLength={72} autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} required/><small>{authMode === 'register' ? (lang === 'rw' ? 'Nibura inyuguti 10.' : 'At least 10 characters.') : (lang === 'rw' ? 'Andika ijambo ry’ibanga ryawe.' : 'Enter your account password.')}</small></label>{authError && <p className="account-error" role="alert">{authError}</p>}<button className="button button-primary" type="submit" disabled={authBusy}>{authBusy ? (lang === 'rw' ? 'Tegereza…' : 'Please wait…') : authMode === 'login' ? (lang === 'rw' ? 'Injira' : 'Sign in') : (lang === 'rw' ? 'Fungura konti' : 'Create account')} <ArrowRight size={15}/></button></form><p className="account-switch">{authMode === 'login' ? (lang === 'rw' ? 'Nta konti ufite?' : 'New to Ireme AI?') : (lang === 'rw' ? 'Usanzwe ufite konti?' : 'Already have an account?')} <button onClick={() => {setAuthMode(authMode === 'login' ? 'register' : 'login');setAuthError('')}}>{authMode === 'login' ? (lang === 'rw' ? 'Fungura konti' : 'Create account') : (lang === 'rw' ? 'Injira' : 'Sign in')}</button></p></section>}
         <div className="content-wrap" data-active={active}>
           <motion.section className="welcome-row" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.45}}>
             <div><div className="eyebrow"><span className="eyebrow-line"/> YOUR PERSONAL LEARNING SPACE</div><h1>{t.greeting}</h1><p>{t.subtitle}</p></div>
