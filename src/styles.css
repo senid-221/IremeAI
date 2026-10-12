@@ -252,3 +252,30 @@ body,.main-area{color:#000}
 
 /* Real photographic thumbnails for official learning-resource cards */
 .resource-grid .learning-tip{display:flex;align-items:flex-start;gap:14px;overflow:hidden}.resource-grid .resource-photo{display:block;width:116px;height:96px;flex:0 0 116px;object-fit:cover;border-radius:10px;background:#eef1f7}.resource-grid .learning-tip>div{min-width:0;flex:1}.resource-grid .tip-icon{display:none}@media(max-width:600px){.resource-grid .resource-photo{width:88px;height:82px;flex-basis:88px}.resource-grid .learning-tip{gap:10px}.resource-grid .learning-tip p{font-size:11px;line-height:1.5}}
+
+/* Assessment and quiz workspace */
+.assessment-list{display:grid;gap:14px;margin-top:18px}
+.assessment-card{display:flex;align-items:center;gap:16px;padding:20px}
+.assessment-card-copy{flex:1;min-width:0}
+.assessment-card h3{font-size:18px;line-height:1.35;margin:8px 0;color:#17233d}
+.assessment-card p{font-size:14px;line-height:1.6;color:#4b5568;margin:0 0 12px}
+.assessment-meta{display:flex;flex-wrap:wrap;gap:14px;color:#5a6475;font-size:13px}
+.assessment-meta span{display:inline-flex;align-items:center;gap:5px}
+.assessment-take,.assessment-result{padding:clamp(16px,3vw,28px)}
+.assessment-question{border:1px solid #e1e6ef;border-radius:14px;padding:18px;margin:16px 0;min-width:0}
+.assessment-question legend{font-size:16px;font-weight:700;line-height:1.55;color:#17233d;padding:0 4px;max-width:100%}
+.assessment-question>small{display:block;color:#5b6475;font-size:13px;margin:6px 0 12px}
+.assessment-option{display:flex;align-items:flex-start;gap:10px;padding:12px 13px;border:1px solid #e2e7ef;border-radius:10px;margin:8px 0;cursor:pointer;color:#202b40;font-size:15px;line-height:1.5}
+.assessment-option.selected{border-color:#335eea;background:#eef3ff}
+.assessment-option input{margin-top:4px;accent-color:#335eea;flex-shrink:0}
+.assessment-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:20px}
+.assessment-score{font-size:58px;font-weight:800;letter-spacing:-2px;line-height:1.2;color:#244ed7;margin:10px 0}
+.assessment-score small{font-size:25px;letter-spacing:0}
+.assessment-result>p{color:#4b5568;font-size:15px}
+.assessment-review{display:grid;gap:10px;margin-top:22px}
+.assessment-review-item{border:1px solid #e1e6ef;border-radius:12px;padding:15px}
+.assessment-review-item b{font-size:15px;line-height:1.55;color:#17233d}
+.assessment-review-item p{font-size:14px;line-height:1.6;color:#4b5568}
+.assessment-review-item .assessment-correct{color:#147447;font-weight:700}
+.assessment-review-item .assessment-incorrect{color:#b42318;font-weight:700}
+@media(max-width:640px){.assessment-card{align-items:flex-start;flex-wrap:wrap;padding:16px}.assessment-card-copy{flex-basis:calc(100% - 54px)}.assessment-card>.button{margin-left:54px}.assessment-card h3{font-size:17px}.assessment-question{padding:14px}.assessment-question legend{font-size:15px}.assessment-option{font-size:14px}.assessment-score{font-size:48px}}
