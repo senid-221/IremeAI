@@ -26,7 +26,7 @@ const sources = [
 ]
 const allowedOfficialRoots = ['reb.gov.rw', 'reb.rw', 'nesa.gov.rw', 'rtb.gov.rw']
 function isAllowedOfficialHost(hostname) {
-  const host = hostname.toLowerCase().replace(/\\.$/, '')
+  const host = hostname.toLowerCase().replace(/\.$/, '')
   return allowedOfficialRoots.some(root => host === root || host.endsWith('.' + root))
 }
 const pool = new Pool({ connectionString: DATABASE_URL, ssl: process.env.DATABASE_SSL === 'disable' ? false : process.env.DATABASE_SSL === 'require' ? { rejectUnauthorized: false } : undefined, max: 3, connectionTimeoutMillis: 10000 })
@@ -82,7 +82,11 @@ async function fetchPage(url) {
   const response = await fetch(url, { headers: { 'user-agent': USER_AGENT, accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'follow' })
   if (!response.ok) throw new Error('HTTP ' + response.status)
   const finalUrl = safeUrl(response.url, url)
-  if (!finalUrl) throw new Error('Redirected outside the official allowlist')
+  if (!finalUrl) {
+    let redirectHost = 'unknown'
+    try { redirectHost = new URL(response.url).hostname } catch {}
+    throw new Error('Redirected to a host outside the official allowlist: ' + redirectHost)
+  }
   const type = response.headers.get('content-type') || ''
   if (type.includes('application/pdf') || finalUrl.toLowerCase().split('?')[0].endsWith('.pdf')) {
     const buffer = Buffer.from(await response.arrayBuffer())
