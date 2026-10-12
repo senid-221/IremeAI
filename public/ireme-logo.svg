@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 330" role="img" aria-label="Ireme Inclusive Education for a Brighter Tomorrow">
+  <g transform="translate(8 5) scale(.88)">
+    <path d="M20 55 107 12 200 55 108 77Z" fill="#073b72"/>
+    <path d="M188 52v35" stroke="#f8c51c" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="105" cy="91" r="31" fill="#073b72"/>
+    <path d="M82 122 C78 146 66 162 47 184 C32 202 27 223 30 250 L80 250 C77 218 88 188 111 163 C129 143 139 124 140 104 C124 122 105 129 82 122Z" fill="#f8c51c"/>
+    <path d="M82 250 L82 177 C91 157 107 142 126 134 C151 125 169 113 177 92 C179 119 167 147 147 167 C129 185 118 207 117 250Z" fill="#073b72"/>
+  </g>
+  <text x="190" y="208" font-family="Arial, Helvetica, sans-serif" font-size="158" font-weight="800" letter-spacing="-7" fill="#073b72">Ireme</text>
+  <path d="M194 234H794" stroke="#f8c51c" stroke-width="6"/>
+  <text x="494" y="275" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" letter-spacing="1.5" fill="#073b72">INCLUSIVE EDUCATION</text>
+  <text x="494" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="1.2" fill="#073b72">FOR A BRIGHTER TOMORROW</text>
+</svg>
