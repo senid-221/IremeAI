@@ -153,3 +153,16 @@ See `.env.example`. Do not commit real API keys, database credentials, or secret
 4. Replace illustrative dashboard statistics with authenticated, permission-checked data.
 5. Add a controlled admin bootstrap/invitation workflow and production-grade abuse monitoring.
 6. Add end-to-end verification, deployment checks, and privacy/data-retention controls.
+
+## Importing official Rwanda education content
+
+The first-stage official-source indexer is available as `npm run ingest:education`. It reads accessible HTML pages from an allowlist of REB, NESA and RTB domains, extracts page text, and stores searchable chunks in the PostgreSQL tables created by migration 004. Configure `DATABASE_URL` and apply migrations 001–004 before running it. Optional safety limits are `EDU_INGEST_MAX_PAGES` (default 40, max 200) and `EDU_INGEST_MAX_CHARS` (default 1,500,000, max 5,000,000).
+
+This is a **first-stage indexer, not a complete syllabus import**. It skips PDFs, login-protected files and non-HTML documents, and a site may block crawling or expose only a landing page. It does not guarantee that every P1–P6, S1–S6 subject/topic/lesson or every TVET trade has been imported. After running it, review the output and verify the indexed content in `/api/education/search`. To achieve complete curriculum coverage, the next ingestion stage must download accessible official PDFs lawfully, extract text, attach accurate level/subject/year metadata, and review the results before marking documents verified. Do not mark third-party past-paper or school-directory content as official without independent verification.
+
+Official source portals:
+- REB curriculum and learning resources: https://www.reb.gov.rw/curriculum-teaching-learning-resources-department
+- REB e-learning: https://elearning.reb.rw/
+- NESA resources: https://www.nesa.gov.rw/1/resources
+- RTB curriculum portal: https://tvetmanagement.rtb.gov.rw/curricula
+- RTB e-learning: https://www.elearning.rtb.gov.rw/course/index.php?categoryid=4
