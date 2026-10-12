@@ -26,7 +26,7 @@ const sources = [
   { publisher: 'Rwanda TVET Board', title: 'RTB Publications', url: 'https://www.rtb.gov.rw/publications', level: 'TVET', type: 'teacher_guide' },
 ]
 const allowedOfficialRoots = ['reb.gov.rw', 'reb.rw', 'nesa.gov.rw', 'rtb.gov.rw']
-const allowedOfficialHosts = new Set(['elearning.reb.rw', 'elearning.rtb.gov.rw', 'www.elearning.rtb.gov.rw', 'curricula.rtb.gov.rw', 'nrs.gov.rw'])
+const allowedOfficialHosts = new Set(['www.reb.gov.rw', 'reb.gov.rw', 'elearning.reb.rw', 'www.nesa.gov.rw', 'nesa.gov.rw', 'www.rtb.gov.rw', 'rtb.gov.rw', 'tvetmanagement.rtb.gov.rw', 'elearning.rtb.gov.rw', 'www.elearning.rtb.gov.rw', 'curricula.rtb.gov.rw', 'nrs.gov.rw'])
 function isAllowedOfficialHost(hostname) {
   const host = hostname.toLowerCase().replace(/\.$/, '')
   return allowedOfficialHosts.has(host) || allowedOfficialRoots.some(root => host === root || host.endsWith('.' + root))
@@ -43,9 +43,8 @@ function safeUrl(raw, base) {
     const u = new URL(raw, base)
     if (u.protocol !== 'https:' || !isAllowedOfficialHost(u.hostname) || u.username || u.password) return null
     u.hash = ''
-    const lastSegment = u.pathname.split('/').pop() || ''
-    const extension = lastSegment.includes('.') ? lastSegment.split('.').pop().toLowerCase() : ''
-    if (!['html', 'htm', 'php', 'pdf', ''].includes(extension)) return null
+    // Official education sites commonly use extensionless CMS routes (for example /publications).
+    // fetchPage validates the response content-type before extracting content.
     return u.href
   } catch { return null }
 }
