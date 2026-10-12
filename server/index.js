@@ -4,6 +4,7 @@ import path from 'node:path'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { configureAuth, requireAuth, requireRole } from './auth.js'
+import { officialEducationSources } from './education-catalog.js'
 
 const app = express()
 const port = Number(process.env.PORT || 8787)
@@ -54,6 +55,29 @@ app.get('/api/health', (_req, res) => {
   })
 })
 
+app.get('/api/education/sources', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300')
+  res.json({ sources: officialEducationSources })
+})
+
+app.get('/api/education/search', async (req, res) => {
+  const query = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 300) : ''
+  const level = typeof req.query.level === 'string' ? req.query.level.trim().slice(0, 60) : ''
+  const subject = typeof req.query.subject === 'string' ? req.query.subject.trim().slice(0, 100) : ''
+  if (!query && !level && !subject) return res.status(400).json({ error: 'Provide q, level or subject to search.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Education database is not configured. Apply database migrations.', code: 'EDUCATION_DB_NOT_CONFIGURED' })
+  try {
+    const result = await pool.query(
+      `SELECT d.id AS document_id, d.title, d.publisher, d.document_type, d.education_level, d.subject_name, d.language, d.academic_year, d.source_url, d.file_url, c.heading, c.content, c.grade_level AS chunk_grade_level, c.subject_name AS chunk_subject, CASE WHEN $1 <> '' THEN ts_rank(c.search_vector, plainto_tsquery('simple', $1)) ELSE 0 END AS rank FROM education_documents d JOIN education_document_chunks c ON c.document_id = d.id WHERE d.verification_status = 'verified' AND ($1 = '' OR c.search_vector @@ plainto_tsquery('simple', $1) OR c.content ILIKE '%' || $1 || '%' OR coalesce(c.heading,'') ILIKE '%' || $1 || '%') AND ($2 = '' OR coalesce(d.education_level,'') ILIKE '%' || $2 || '%' OR coalesce(c.grade_level,'') ILIKE '%' || $2 || '%') AND ($3 = '' OR coalesce(d.subject_name,'') ILIKE '%' || $3 || '%' OR coalesce(c.subject_name,'') ILIKE '%' || $3 || '%') ORDER BY rank DESC, d.title ASC LIMIT 12`,
+      [query, level, subject],
+    )
+    return res.json({ results: result.rows, count: result.rowCount, source: 'verified-postgresql-education-index' })
+  } catch (error) {
+    console.error('Education knowledge search failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not search the education knowledge base.' })
+  }
+})
 app.get('/api/teacher/overview', requireRole('teacher', 'school_admin', 'platform_admin'), (_req, res) => {
   res.json({ portal: 'teacher', message: 'Teacher access verified. Classroom tools are the next implementation step.' })
 })
@@ -257,6 +281,21 @@ app.post('/api/ask', async (req, res) => {
     })
   }
 
+  let educationContext = []
+  if (pool) {
+    try {
+      const terms = question.split(/\s+/).filter(term => term.length > 2).slice(0, 12).join(' ')
+      if (terms) {
+        const knowledge = await pool.query(
+          `SELECT d.title, d.publisher, d.document_type, d.education_level, d.subject_name, d.academic_year, d.source_url, c.heading, c.content FROM education_documents d JOIN education_document_chunks c ON c.document_id = d.id WHERE d.verification_status = 'verified' AND (c.search_vector @@ plainto_tsquery('simple', $1) OR c.content ILIKE '%' || $2 || '%' OR coalesce(c.heading,'') ILIKE '%' || $2 || '%') ORDER BY ts_rank(c.search_vector, plainto_tsquery('simple', $1)) DESC LIMIT 6`,
+          [terms, question.slice(0, 120)],
+        )
+        educationContext = knowledge.rows
+      }
+    } catch (error) {
+      console.error('Education retrieval unavailable; continuing without DB context:', error?.message || 'unknown error')
+    }
+  }
   const languageName = language === 'rw' ? 'Kinyarwanda' : 'English'
   const systemPrompt = [
     'IDENTITY AND MISSION: You are Ireme AI, a Rwanda-focused educational tutor. Align teaching with Rwanda’s official Competence-Based Curriculum (CBC). Use REB as the primary authority for nursery, primary and general secondary curriculum, syllabi, textbooks, teacher guides and learning materials; use RTB as the primary authority for TVET curricula, trades, modules and qualification levels 1–5; use NESA for assessment standards, comprehensive assessments, national examinations, official model questions, examination rules and published timetables. Include academic subjects, IT/ICT and computer science, and arts/creative fields such as fine art, graphic art, fashion, multimedia, music and performing arts when relevant to the learner’s programme. These institutions have different roles; do not describe NESA as the publisher of every textbook or curriculum.',
@@ -270,6 +309,7 @@ app.post('/api/ask', async (req, res) => {
     'ASSESSMENT INTEGRITY: Create original practice questions aligned to the requested level and topic, label them as Ireme AI practice—not official NESA questions—and provide worked solutions or a marking rubric. Never claim a generated paper is an official past paper. During an active exam, support learning without facilitating cheating.',
     'ANSWER QUALITY: Teach concepts instead of only giving homework answers. Show calculations and reasoning step by step. If a question is ambiguous, ask a concise clarifying question. Correct misconceptions kindly. Do not invent curriculum requirements, school records, marks, results or citations.',
     'PRIVACY AND SAFEGUARDING: Do not request unnecessary personal data. For student safety or serious wellbeing concerns, respond supportively and recommend a trusted adult or qualified professional.',
+    educationContext.length ? 'EDUCATION DATABASE CONTEXT (retrieved from verified PostgreSQL entries; cite only supplied metadata):\n' + educationContext.map(item => '[' + item.publisher + ' | ' + item.title + ' | ' + (item.education_level || 'level not specified') + ' | ' + (item.subject_name || 'subject not specified') + ' | ' + (item.academic_year || 'year not specified') + '] ' + (item.heading || '') + ': ' + item.content + ' Source: ' + item.source_url).join('\n\n') : 'EDUCATION DATABASE CONTEXT: No matching verified excerpts found. Do not claim retrieval from a textbook or past paper; link official sources and label general explanations.',
     subject ? 'The learner selected this subject: ' + subject + '.' : '',
   ].filter(Boolean).join('\\n')
 
