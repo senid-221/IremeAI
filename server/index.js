@@ -92,6 +92,7 @@ app.post('/api/admin/education/setup', async (req, res) => {
       await client.query('BEGIN')
       try { await client.query(sql); await client.query('COMMIT') } catch (error) { await client.query('ROLLBACK'); throw error }
     } else if (!schema.schools || !schema.users || !schema.subjects || !schema.learning_resources) {
+      educationSetupRunning = false
       return res.status(409).json({ error: 'Database schema is partially installed. For safety, automatic setup stopped without changing it. Review migrations 001–003 before retrying.' })
     }
     for (const file of ['002_learning_persistence_indexes.sql','003_student_library_and_schedule.sql','004_education_knowledge_base.sql']) {
@@ -102,6 +103,7 @@ app.post('/api/admin/education/setup', async (req, res) => {
     await client.query('SELECT 1')
   } catch (error) {
     console.error('Education migration failed:', error?.message || 'unknown error')
+    educationSetupRunning = false
     return res.status(500).json({ error: 'Database setup failed. Review Hostinger deployment logs; no database credentials are returned.' })
   } finally { client.release() }
   try {
