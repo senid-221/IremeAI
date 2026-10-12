@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import 'dotenv/config'
 import pg from 'pg'
+import pdfParse from 'pdf-parse'
 
 const { Pool } = pg
 const DATABASE_URL = process.env.DATABASE_URL
@@ -36,7 +37,8 @@ function safeUrl(raw, base) {
     const u = new URL(raw, base)
     if (u.protocol !== 'https:' || !allowedHosts.has(u.hostname) || u.username || u.password) return null
     u.hash = ''
-    if (!['html', 'htm', 'php', ''].includes((u.pathname.split('.').pop() || '').toLowerCase()) && !u.pathname.endsWith('/')) return null
+    const extension = (u.pathname.split('.').pop() || '').toLowerCase()
+    if (!['html', 'htm', 'php', 'pdf', ''].includes(extension) && !u.pathname.endsWith('/')) return null
     return u.href
   } catch { return null }
 }
@@ -78,11 +80,18 @@ async function fetchPage(url) {
   const finalUrl = safeUrl(response.url, url)
   if (!finalUrl) throw new Error('Redirected outside the official allowlist')
   const type = response.headers.get('content-type') || ''
-  if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Non-HTML resource; PDF/document extraction is not enabled in this importer')
+  if (type.includes('application/pdf') || finalUrl.toLowerCase().split('?')[0].endsWith('.pdf')) {
+    const buffer = Buffer.from(await response.arrayBuffer())
+    if (buffer.length > 25 * 1024 * 1024) throw new Error('PDF exceeds 25 MB safety limit')
+    const parsed = await pdfParse(buffer)
+    const text = String(parsed.text || '').replace(/[ \\t]+/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 150000)
+    return { url: finalUrl, title: String(parsed.info?.Title || finalUrl.split('/').pop() || 'Official PDF').slice(0, 240), text, links: [], language: 'en' }
+  }
+  if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type)
   const html = await response.text()
   const text = cleanHtml(html).slice(0, 60000)
-  const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
-  return { url: finalUrl, title: extractTitle(html, finalUrl), text, links }
+  const links = [...html.matchAll(/href\\s*=\\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
+  return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en' }
 }
 async function savePage(source, page) {
   if (page.text.length < 250) { skipped++; return }
@@ -135,7 +144,7 @@ async function main() {
       }
       if (pages >= MAX_PAGES || totalChars >= MAX_CHARS) break
     }
-    console.log(JSON.stringify({ pagesVisited: pages, charactersExtracted: totalChars, chunksStored: stored, skipped, note: 'This imports accessible official HTML pages only. PDFs, login-protected content, and inaccessible files need a separate lawful extraction/review workflow; this does not guarantee complete curriculum coverage.' }, null, 2))
+    console.log(JSON.stringify({ pagesVisited: pages, charactersExtracted: totalChars, chunksStored: stored, skipped, note: 'This imports accessible HTML and text-extractable PDFs from allowlisted official domains only. Scanned/image-only PDFs, login-protected resources and inaccessible files need OCR or manual review. Confirm extracted metadata and source accuracy; this does not guarantee complete curriculum coverage.' }, null, 2))
   } finally {
     await pool.end()
   }
