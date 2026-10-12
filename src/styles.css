@@ -279,3 +279,23 @@ body,.main-area{color:#000}
 .assessment-review-item .assessment-correct{color:#147447;font-weight:700}
 .assessment-review-item .assessment-incorrect{color:#b42318;font-weight:700}
 @media(max-width:640px){.assessment-card{align-items:flex-start;flex-wrap:wrap;padding:16px}.assessment-card-copy{flex-basis:calc(100% - 54px)}.assessment-card>.button{margin-left:54px}.assessment-card h3{font-size:17px}.assessment-question{padding:14px}.assessment-question legend{font-size:15px}.assessment-option{font-size:14px}.assessment-score{font-size:48px}}
+
+/* Teacher assessment authoring */
+.assessment-create-panel{padding:clamp(16px,3vw,26px);margin:18px 0}
+.assessment-create-form{display:grid;gap:16px;margin-top:18px}
+.assessment-create-form>label,.assessment-builder-question>label,.assessment-form-grid>label{display:grid;gap:7px;color:#17233d;font-size:13px;font-weight:650}
+.assessment-create-form input,.assessment-create-form textarea,.assessment-create-form select,.assessment-builder-question input,.assessment-builder-question textarea,.assessment-builder-question select{width:100%;min-width:0;border:1px solid #d6dce7;border-radius:10px;padding:11px 12px;background:#fff;color:#17233d;font:inherit;font-weight:400;box-sizing:border-box}
+.assessment-create-form input:focus,.assessment-create-form textarea:focus,.assessment-create-form select:focus,.assessment-builder-question input:focus,.assessment-builder-question textarea:focus,.assessment-builder-question select:focus{outline:2px solid #9bb6ff;border-color:#335eea}
+.assessment-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.assessment-builder-heading{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.assessment-builder-heading h4{margin:0;font-size:16px;color:#17233d}
+.assessment-builder-heading span{font-size:12px;color:#5b6475}
+.assessment-builder-question{margin:0;padding:16px}
+.assessment-builder-question legend{font-size:15px}
+.assessment-builder-question>label{margin:12px 0}
+.assessment-builder-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.assessment-builder-options label{display:flex;align-items:center;gap:8px;min-width:0;color:#4b5568;font-size:13px}
+.assessment-builder-options label>span{font-weight:700;flex-shrink:0}
+.assessment-remove-question{justify-self:start;display:inline-flex;align-items:center;gap:6px}
+.assessment-create-form button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:640px){.assessment-form-grid,.assessment-builder-options{grid-template-columns:1fr}.assessment-create-panel .section-heading{align-items:flex-start;gap:10px}.assessment-create-panel .section-heading>.button{flex-shrink:0}.assessment-builder-question{padding:12px}}
