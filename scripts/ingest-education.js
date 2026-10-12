@@ -175,6 +175,8 @@ async function main() {
     for (const source of sources) {
       const queue = [source.url]
       let sourcePages = 0
+      let sourceChunksBefore = stored
+      console.log('SOURCE START:', source.title, '|', source.url)
       while (queue.length && pages < MAX_PAGES && totalChars < MAX_CHARS && sourcePages < 12) {
         const url = queue.shift()
         if (!url || seen.has(url)) continue
@@ -198,9 +200,10 @@ async function main() {
           skipped++
         }
       }
+      console.log('SOURCE RESULT:', source.title, '| pages:', sourcePages, '| chunks:', stored - sourceChunksBefore)
       if (pages >= MAX_PAGES || totalChars >= MAX_CHARS) break
     }
-    console.log(JSON.stringify({ pagesVisited: pages, charactersExtracted: totalChars, chunksStored: stored, skipped, note: 'This imports accessible HTML and text-extractable PDFs from allowlisted official domains only. Scanned/image-only PDFs, login-protected resources and inaccessible files need OCR or manual review. Confirm extracted metadata and source accuracy; this does not guarantee complete curriculum coverage.' }, null, 2))
+    console.log(JSON.stringify({ indexerBuild: INDEXER_BUILD, pagesVisited: pages, charactersExtracted: totalChars, chunksStored: stored, skipped, note: 'This imports accessible HTML and text-extractable PDFs from allowlisted official domains only. Scanned/image-only PDFs, login-protected resources and inaccessible files need OCR or manual review. Confirm extracted metadata and source accuracy; this does not guarantee complete curriculum coverage.' }, null, 2))
   } finally {
     await pool.end()
   }
