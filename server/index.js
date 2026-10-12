@@ -291,11 +291,29 @@ app.post('/api/ask', async (req, res) => {
   let educationContext = []
   if (pool) {
     try {
-      const terms = question.split(/\s+/).filter(term => term.length > 2).slice(0, 12).join(' ')
-      if (terms) {
+      // Keep retrieval queries compact and robust for English/Kinyarwanda questions.
+      const terms = question.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || []
+      const uniqueTerms = [...new Set(terms)].slice(0, 12)
+      const searchTerms = uniqueTerms.join(' ')
+      if (searchTerms) {
         const knowledge = await pool.query(
-          `SELECT d.title, d.publisher, d.document_type, d.education_level, d.subject_name, d.academic_year, d.source_url, c.heading, c.content FROM education_documents d JOIN education_document_chunks c ON c.document_id = d.id WHERE d.verification_status = 'verified' AND (c.search_vector @@ plainto_tsquery('simple', $1) OR c.content ILIKE '%' || $2 || '%' OR coalesce(c.heading,'') ILIKE '%' || $2 || '%') ORDER BY ts_rank(c.search_vector, plainto_tsquery('simple', $1)) DESC LIMIT 6`,
-          [terms, question.slice(0, 120)],
+          `SELECT d.title, d.publisher, d.document_type, d.education_level, d.subject_name, d.academic_year, d.source_url, c.heading, c.content,
+             ts_rank(c.search_vector, plainto_tsquery('simple', $1)) AS rank
+           FROM education_documents d
+           JOIN education_document_chunks c ON c.document_id = d.id
+           WHERE d.verification_status = 'verified'
+             AND (
+               c.search_vector @@ plainto_tsquery('simple', $1)
+               OR EXISTS (
+                 SELECT 1 FROM unnest($2::text[]) AS term
+                 WHERE length(term) >= 4
+                   AND (c.content ILIKE '%' || term || '%' OR coalesce(c.heading,'') ILIKE '%' || term || '%'
+                     OR coalesce(d.title,'') ILIKE '%' || term || '%' OR coalesce(d.subject_name,'') ILIKE '%' || term || '%')
+               )
+             )
+           ORDER BY rank DESC, length(c.content) DESC
+           LIMIT 8`,
+          [searchTerms, uniqueTerms],
         )
         educationContext = knowledge.rows
       }
