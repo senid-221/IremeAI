@@ -13,17 +13,19 @@ if (!DATABASE_URL) {
 const MAX_PAGES = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_PAGES || 40), 1), 200)
 const MAX_CHARS = Math.min(Math.max(Number(process.env.EDU_INGEST_MAX_CHARS || 1500000), 10000), 5000000)
 const TIMEOUT_MS = 25000
-const INDEXER_BUILD = '2026-10-12-level3-pdf-3'
+const INDEXER_BUILD = '2026-10-12-curriculum-crawl-1'
 const USER_AGENT = 'IremeAI-EducationIndexer/1.0 (official education resource indexing; contact site administrator)'
 const sources = [
   { publisher: 'Rwanda TVET Board', title: 'Publication of TVET Curricula for 2023-2024 School Year', url: 'https://www.nrs.gov.rw/fileadmin/user_upload/nrs2024/Publication_of_TVET_curricula_for_2023-2024_school_year-RTB_september.pdf', level: 'TVET Levels 1-5', type: 'tvet_module' },
+  { publisher: 'Rwanda TVET Board', title: 'RQF Level 3 English at Workplace Training Manual', url: 'https://www.elearning.rtb.gov.rw/pluginfile.php/8838/mod_folder/content/0/CCMEN302%20%20ENGLISH%20AT%20WORKPLACE.pdf?forcedownload=1', level: 'TVET Level 3', type: 'tvet_module' },
+  { publisher: 'Rwanda TVET Board', title: 'TVET Competency-Based Curriculum Development Framework (February 2023)', url: 'https://www.rtb.gov.rw/fileadmin/user_upload/RTB/Publications/CBT_CBA_Frameworks/1._TVET_CBC_Development_Framework_FINAL.pdf', level: 'TVET Levels 1-5', type: 'curriculum' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB Curriculum, Teaching and Learning Resources', url: 'https://www.reb.gov.rw/curriculum-teaching-learning-resources-department', level: 'Nursery, Primary P1-P6, Secondary S1-S6', type: 'curriculum' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB E-Learning', url: 'https://elearning.reb.rw/', level: 'Primary P1-P6, Secondary S1-S6', type: 'textbook' },
   { publisher: 'Rwanda Basic Education Board', title: 'REB Publications', url: 'https://www.reb.gov.rw/publications', level: 'Basic education', type: 'teacher_guide' },
   { publisher: 'National Examination and School Inspection Authority', title: 'NESA Official Resources', url: 'https://www.nesa.gov.rw/1/resources', level: 'Primary, Secondary', type: 'assessment' },
   { publisher: 'Rwanda TVET Board', title: 'RTB Curriculum and Instructional Materials', url: 'https://www.rtb.gov.rw/curriculum-instructional-materials-development-department', level: 'TVET Levels 1-5', type: 'tvet_module' },
   { publisher: 'Rwanda TVET Board', title: 'RTB TVET Curricula Portal', url: 'https://tvetmanagement.rtb.gov.rw/curricula', level: 'TVET Levels 1-5', type: 'tvet_module' },
-  { publisher: 'Rwanda TVET Board', title: 'RTB E-Learning', url: 'https://www.elearning.rtb.gov.rw/course/index.php?categoryid=4', level: 'TVET Levels 1-5', type: 'tvet_module' },
+  { publisher: 'Rwanda TVET Board', title: 'RTB E-Learning Handouts', url: 'https://www.elearning.rtb.gov.rw/course/index.php?categoryid=8', level: 'TVET Levels 1-5', type: 'tvet_module' },
   { publisher: 'Rwanda TVET Board', title: 'RTB Publications', url: 'https://www.rtb.gov.rw/publications', level: 'TVET', type: 'teacher_guide' },
 ]
 const allowedOfficialRoots = ['reb.gov.rw', 'reb.rw', 'nesa.gov.rw', 'rtb.gov.rw']
@@ -82,7 +84,7 @@ function splitChunks(text, size = 3500) {
   return chunks
 }
 async function fetchPage(url) {
-  const response = await fetch(url, { headers: { 'user-agent': USER_AGENT, accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'follow' })
+  const response = await fetch(url, { headers: { 'user-agent': USER_AGENT, accept: 'application/pdf,application/xhtml+xml,text/html;q=0.9,*/*;q=0.5' }, signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'follow' })
   if (!response.ok) throw new Error('HTTP ' + response.status)
   const finalUrl = safeUrl(response.url, url)
   if (!finalUrl) {
@@ -91,8 +93,11 @@ async function fetchPage(url) {
     throw new Error('Redirected to a host outside the official allowlist: ' + redirectHost)
   }
   const type = (response.headers.get('content-type') || '').toLowerCase()
-  // Read once and identify PDFs by their file signature as well as URL/content-type.
-  // Some official government servers deliver PDFs as application/octet-stream or redirect to extensionless URLs.
+  // Ignore binary website assets before downloading their full body.
+  if (/^(image\/|text\/css|application\/(json|javascript|manifest\+json)|font\/)/i.test(type)) {
+    throw new Error('Skipped non-learning asset (' + type + ')')
+  }
+  // Some official government servers deliver PDFs as octet-stream or redirect to extensionless URLs.
   const buffer = Buffer.from(await response.arrayBuffer())
   if (buffer.length > 25 * 1024 * 1024) throw new Error('Resource exceeds 25 MB safety limit')
   const looksLikePdf = buffer.subarray(0, 1024).includes(Buffer.from('%PDF-'))
@@ -103,13 +108,13 @@ async function fetchPage(url) {
     const parsed = await pdfParse(buffer)
     const text = String(parsed.text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 150000)
     if (text.length < 250) throw new Error('PDF downloaded but contains too little extractable text; it may be scanned or image-only')
-    return { url: finalUrl, title: String(parsed.info?.Title || finalUrl.split('/').pop() || 'Official PDF').slice(0, 240), text, links: [], language: 'en' }
+    return { url: finalUrl, title: String(parsed.info?.Title || finalUrl.split('/').pop() || 'Official PDF').slice(0, 240), text, links: [], language: 'en', resourceType: 'pdf' }
   }
   if (!type.includes('text/html') && !type.includes('application/xhtml+xml')) throw new Error('Unsupported resource type: ' + type + '; final URL: ' + finalUrl)
   const html = buffer.toString('utf8')
   const text = cleanHtml(html).slice(0, 60000)
   const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)].map(m => safeUrl(m[1], finalUrl)).filter(Boolean)
-  return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en' }
+  return { url: finalUrl, title: extractTitle(html, finalUrl), text, links, language: 'en', resourceType: 'html' }
 }
 function inferMetadata(source, page) {
   const label = (page.title + ' ' + page.url.split('/').pop()).replace(/[_-]+/g, ' ').toUpperCase()
@@ -180,12 +185,16 @@ async function main() {
           sourcePages++
           totalChars += page.text.length
           await savePage(source, page)
-          console.log('Indexed:', page.url, '(' + page.text.length + ' chars)')
+          console.log('Indexed ' + (page.resourceType || 'resource').toUpperCase() + ':', page.url, '(' + page.text.length + ' chars; ' + Math.ceil(page.text.length / 3500) + ' chunks approx.)')
           for (const link of page.links) {
-            if (!seen.has(link) && queue.length < 100 && totalChars < MAX_CHARS) queue.push(link)
+            // Avoid favicon, images, CSS, JS, JSON and font files; follow only HTML routes and PDFs.
+            const pathname = new URL(link).pathname.toLowerCase()
+            const looksLikeAsset = /\.(ico|png|jpe?g|gif|webp|svg|css|js|json|woff2?|ttf|map)$/i.test(pathname)
+            const isPdf = pathname.endsWith('.pdf')
+            if (!looksLikeAsset && (isPdf || !/\.[a-z0-9]{1,5}$/i.test(pathname)) && !seen.has(link) && queue.length < 100 && totalChars < MAX_CHARS) queue.push(link)
           }
         } catch (error) {
-          console.warn('Skipped:', url, '-', error.message)
+          if (!error.message.startsWith('Skipped non-learning asset')) console.warn('Skipped:', url, '-', error.message)
           skipped++
         }
       }
