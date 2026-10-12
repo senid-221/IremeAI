@@ -245,3 +245,7 @@ body,.main-area{color:#000}
 .hero-brand-logo{display:block;color:#0756b8;background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:10px;box-sizing:content-box;flex-shrink:0}
 .ask-logo{color:#fff}
 .ask-logo img,.answer-avatar img{display:none}
+
+/* Use the Ireme logo artwork supplied by the project owner. */
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain;padding:3px}
+.hero-brand-logo{display:block;width:min(100%,320px)!important;height:auto!important;max-height:150px!important;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-sizing:border-box;filter:drop-shadow(0 5px 14px #0002)}
