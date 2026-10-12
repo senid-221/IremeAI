@@ -4,7 +4,7 @@ import {
   ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check,
   ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
   Lightbulb, Menu, Mic, MoreHorizontal, Play, Plus, Search, Send, Settings2,
-  ShieldCheck, Sparkles, Target, TrendingUp, WandSparkles, Zap
+  ShieldCheck, Target, TrendingUp, Zap
 } from 'lucide-react'
 
 type Lang = 'en' | 'rw'
@@ -315,12 +315,7 @@ export default function App() {
         <nav className="main-nav">
           {navItems.map(({key, icon: Icon}) => <button key={key} className={`nav-item ${active === key ? 'active' : ''}`} onClick={() => {setActive(key); setMenuOpen(false)}}><Icon size={18}/><span>{t[key]}</span>{key === 'progressNav' && <span className="nav-dot"/>}</button>)}
         </nav>
-        <div className="sidebar-card">
-          <div className="sidebar-card-icon"><WandSparkles size={17}/></div>
-          <b>Learning, your way</b>
-          <p>Small steps every day add up to big things.</p>
-          <div className="mini-progress"><span/></div><small>72% weekly goal</small>
-        </div>
+        
         <div className="nav-label bottom-label">SUPPORT</div>
         <button className="nav-item" onClick={() => setActive('help')}><CircleHelp size={18}/><span>{t.help}</span></button>
         <button className={'nav-item ' + (active === 'settings' ? 'active' : '')} onClick={() => {setActive('settings');setMenuOpen(false);setProfileFeedback('');if(user){setProfileName(user.fullName);setProfileGrade(user.gradeLevel || '')}else{setAuthOpen(true);setAuthMode('login')}}}><Settings2 size={18}/><span>{lang === 'rw' ? 'Igenamiterere' : 'Settings'}</span></button>
@@ -346,7 +341,7 @@ export default function App() {
           </motion.section>
 
           <motion.section className="hero-banner" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:.08,duration:.5}}>
-            <div className="hero-copy"><div className="hero-pill"><Sparkles size={13}/> YOUR AI STUDY PARTNER</div><h2>{t.welcome}</h2><p>{t.welcomeSub}</p><div className="hero-actions"><button className="button button-white" onClick={() => document.getElementById('ask-ireme')?.focus()}>{t.start}<ArrowRight size={16}/></button><button className="button button-glass" onClick={() => {setActive('learn');window.scrollTo({top:0,behavior:'smooth'})}}><Play size={15} fill="currentColor"/> {t.explore}</button></div><div className="hero-trust"><span><ShieldCheck size={14}/> Curriculum-aware</span><span><Zap size={14}/> Personalized learning</span></div></div>
+            <div className="hero-copy"><div className="hero-pill"><BrainCircuit size={13}/> YOUR AI STUDY PARTNER</div><h2>{t.welcome}</h2><p>{t.welcomeSub}</p><div className="hero-actions"><button className="button button-white" onClick={() => document.getElementById('ask-ireme')?.focus()}>{t.start}<ArrowRight size={16}/></button><button className="button button-glass" onClick={() => {setActive('learn');window.scrollTo({top:0,behavior:'smooth'})}}><Play size={15} fill="currentColor"/> {t.explore}</button></div><div className="hero-trust"><span><ShieldCheck size={14}/> Curriculum-aware</span><span><Zap size={14}/> Personalized learning</span></div></div>
             <div className="hero-art brand-hero-art" aria-label="Ireme AI learning"><img className="hero-brand-logo" src="/ireme-mark.svg" alt="Ireme logo"/><div className="hero-brand-copy"><b>Your AI Learning Partner</b><span>Learn. Practice. Improve. Achieve.</span></div><div className="hero-book-icons"><BookOpen size={28}/><FileText size={28}/><BarChart3 size={28}/><CalendarDays size={28}/></div></div>
           </motion.section>
 
@@ -369,9 +364,9 @@ export default function App() {
 
           <div className="lower-grid">
             <section className="panel ask-panel" id="ask-panel">
-              <div className="ask-heading"><div className="ask-logo"><Sparkles size={19}/></div><div><h3>{t.askTitle}</h3><p>{t.askSub}</p></div><span className="online-badge"><i/>{t.online}</span></div>
+              <div className="ask-heading"><div className="ask-logo"><img src="/ireme-mark.svg" alt="Ireme AI"/></div><div><h3>{t.askTitle}</h3><p>{t.askSub}</p></div><span className="online-badge"><i/>{t.online}</span></div>
               <div className="suggestion-row">{[t.prompt1,t.prompt2,t.prompt3].map((p,i)=><button key={p} onClick={() => {setQuestion(p);document.getElementById('ask-ireme')?.focus()}}><span>{[<Lightbulb size={15}/>,<Target size={15}/>,<BookOpen size={15}/>][i]}</span>{p}<ArrowUpRight size={13}/></button>)}</div>
-              {(answer || isAsking) && <AnimatePresence><motion.div className="answer-box" initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}><div className="answer-avatar"><Sparkles size={15}/></div><p>{isAsking ? (lang === 'rw' ? 'Tegereza gato, ndimo gutegura igisubizo…' : 'One moment, I’m preparing your answer…') : answer}</p></motion.div></AnimatePresence>}
+              {(answer || isAsking) && <AnimatePresence><motion.div className="answer-box" initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}><div className="answer-avatar"><img src="/ireme-mark.svg" alt="Ireme AI"/></div><p>{isAsking ? (lang === 'rw' ? 'Tegereza gato, ndimo gutegura igisubizo…' : 'One moment, I’m preparing your answer…') : answer}</p></motion.div></AnimatePresence>}
               <form className="ask-input" onSubmit={e => {e.preventDefault();askAI()}}><button type="button" className="attach-button" aria-label="Add attachment"><Plus size={19}/></button><input id="ask-ireme" value={question} onChange={e=>setQuestion(e.target.value)} placeholder={t.ask}/><button type="button" className="mic-button" aria-label="Voice input"><Mic size={18}/></button><button className="send-button" type="submit" aria-label="Send question" disabled={isAsking}><Send size={17}/></button></form><div className="privacy-note"><ShieldCheck size={13}/> {lang === 'rw' ? 'Ibiganiro byawe bibikwa mu mutekano iyo winjiye muri konti.' : 'Your conversations are saved securely when you sign in.'}</div>
               {user && <div className="conversation-history"><div className="history-heading"><b>{lang === 'rw' ? 'Ibiganiro wabanje' : 'Saved conversations'}</b><button className="text-link" onClick={() => setHistoryOpen(v => !v)}>{historyOpen ? (lang === 'rw' ? 'Hisha' : 'Hide') : (lang === 'rw' ? 'Reba byose' : 'View history')} <ChevronDown size={13}/></button><button className="text-link" onClick={() => {setConversationId(null);setChatMessages([]);setAnswer('');setQuestion('')}}>{lang === 'rw' ? 'Ikiganiro gishya' : 'New chat'} <Plus size={13}/></button></div>
               {historyOpen && <div className="history-list">{conversations.length === 0 ? <p className="history-empty">{lang === 'rw' ? 'Nta kiganiro kirabikwa.' : 'Your saved conversations will appear here.'}</p> : conversations.map(item => <button className={`history-item ${conversationId === item.id ? 'selected' : ''}`} key={item.id} onClick={() => openConversation(item.id)}><span><b>{item.title || (lang === 'rw' ? 'Ikiganiro gishya' : 'New conversation')}</b><small>{item.message_count} {lang === 'rw' ? 'ubutumwa' : 'messages'} · {new Date(item.updated_at).toLocaleDateString(lang === 'rw' ? 'rw-RW' : 'en-GB')}</small></span><ChevronRight size={15}/></button>)}</div>}</div>}
