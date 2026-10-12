@@ -137,6 +137,10 @@ app.use((error, _req, res, _next) => {
   return res.status(500).json({ error: 'An unexpected server error occurred.' })
 })
 
-app.listen(port, () => {
-  console.log('Ireme AI server listening on port ' + port)
-})
+export default app
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log('Ireme AI server listening on port ' + port)
+  })
+}
