@@ -24,7 +24,11 @@ const sources = [
   { publisher: 'Rwanda TVET Board', title: 'RTB E-Learning', url: 'https://www.elearning.rtb.gov.rw/course/index.php?categoryid=4', level: 'TVET Levels 1-5', type: 'tvet_module' },
   { publisher: 'Rwanda TVET Board', title: 'RTB Publications', url: 'https://www.rtb.gov.rw/publications', level: 'TVET', type: 'teacher_guide' },
 ]
-const allowedHosts = new Set(['reb.gov.rw', 'www.reb.gov.rw', 'elearning.reb.rw', 'nesa.gov.rw', 'www.nesa.gov.rw', 'rtb.gov.rw', 'www.rtb.gov.rw', 'tvetmanagement.rtb.gov.rw', 'www.elearning.rtb.gov.rw', 'elearning.rtb.gov.rw', 'curricula.rtb.gov.rw'])
+const allowedOfficialRoots = ['reb.gov.rw', 'reb.rw', 'nesa.gov.rw', 'rtb.gov.rw']
+function isAllowedOfficialHost(hostname) {
+  const host = hostname.toLowerCase().replace(/\\.$/, '')
+  return allowedOfficialRoots.some(root => host === root || host.endsWith('.' + root))
+}
 const pool = new Pool({ connectionString: DATABASE_URL, ssl: process.env.DATABASE_SSL === 'disable' ? false : process.env.DATABASE_SSL === 'require' ? { rejectUnauthorized: false } : undefined, max: 3, connectionTimeoutMillis: 10000 })
 const seen = new Set()
 let totalChars = 0
@@ -35,7 +39,7 @@ let skipped = 0
 function safeUrl(raw, base) {
   try {
     const u = new URL(raw, base)
-    if (u.protocol !== 'https:' || !allowedHosts.has(u.hostname) || u.username || u.password) return null
+    if (u.protocol !== 'https:' || !isAllowedOfficialHost(u.hostname) || u.username || u.password) return null
     u.hash = ''
     const extension = (u.pathname.split('.').pop() || '').toLowerCase()
     if (!['html', 'htm', 'php', 'pdf', ''].includes(extension) && !u.pathname.endsWith('/')) return null
