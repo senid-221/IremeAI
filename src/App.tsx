@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import AssessmentWorkspace from './AssessmentWorkspace'
 import CurriculumWorkspace from './CurriculumWorkspace'
+import RoleDashboard from './RoleDashboard'
 import {
   ArrowRight, ArrowUpRight, Bell, BookOpen, BookOpenCheck, CalendarDays, Check, ClipboardList,
   ChevronDown, ChevronRight, CircleHelp, Clock3, Languages, LayoutDashboard,
@@ -315,6 +316,7 @@ export default function App() {
         <div className="nav-label">WORKSPACE</div>
         <nav className="main-nav">
           {navItems.map(({key, icon: Icon}) => <button key={key} className={`nav-item ${active === key ? 'active' : ''}`} onClick={() => {setActive(key); setMenuOpen(false)}}><Icon size={18}/><span>{t[key]}</span>{key === 'progressNav' && <span className="nav-dot"/>}</button>)}
+          {user && ['teacher','school_admin','platform_admin'].includes(user.role) && <button className={`nav-item ${active === 'roleDashboard' ? 'active' : ''}`} onClick={() => {setActive('roleDashboard');setMenuOpen(false)}}><LayoutDashboard size={18}/><span>{user.role === 'teacher' ? (lang === 'rw' ? 'Umwarimu' : 'Teacher dashboard') : (lang === 'rw' ? 'Ubuyobozi' : 'Admin dashboard')}</span></button>}
         </nav>
         
         <div className="nav-label bottom-label">SUPPORT</div>
@@ -377,6 +379,7 @@ export default function App() {
           </div>
 
           {active !== 'home' && <motion.section className="workspace-page" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:.25}}>
+            {active === 'roleDashboard' && user && ['teacher','school_admin','platform_admin'].includes(user.role) && <RoleDashboard lang={lang} role={user.role} />}
             {active === 'exams' && <AssessmentWorkspace lang={lang} signedIn={Boolean(user)} onSignIn={() => { setAuthMode('login'); setAuthOpen(true); setAuthError('') }} />}
             {active === 'learn' && <CurriculumWorkspace lang={lang} />}
             {active === 'library' && <><div className="page-heading"><div><span className="section-kicker">{lang === 'rw' ? 'IBIKORESHO BYO KWIGA' : 'RWANDA OFFICIAL LEARNING RESOURCES'}</span><h2>{lang === 'rw' ? 'Isomero ry’amasomo' : 'Study library'}</h2><p>{lang === 'rw' ? 'Amasomo, ibitabo, integanyanyigisho n’amabwiriza ava ku mbuga zemewe za REB na NESA.' : 'Curriculum, textbooks, assessment guides and learning materials from official REB and NESA sources.'}</p></div><span className="page-chip"><BookOpenCheck size={15}/> {savedResources.length} saved</span></div><div className="resource-grid">
