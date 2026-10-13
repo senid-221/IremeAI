@@ -351,3 +351,21 @@ body,.main-area{color:#000}
 .role-admin-extra b{font-size:12px;font-weight:600;color:#667187;line-height:1.5}
 .role-admin-extra strong{font-size:23px;color:#17233d}
 @media(max-width:760px){.role-dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.role-stat{padding:14px}.role-stat strong{font-size:25px}.role-admin-extra{grid-template-columns:1fr}.role-dashboard .page-heading{align-items:flex-start;gap:12px}.role-dashboard .page-heading>.button{flex-shrink:0}}
+
+
+/* Class management and learner enrollment */
+.role-class-create{display:grid;grid-template-columns:1.2fr .8fr .8fr auto;align-items:end;gap:10px;padding:16px 0 20px;border-bottom:1px solid #e8ecf3}
+.role-class-create>label{display:grid;gap:7px;color:#17233d;font-size:12px;font-weight:650;min-width:0}
+.role-class-create input,.role-class-create select,.role-enroll-form input{width:100%;min-width:0;box-sizing:border-box;padding:11px 12px;border:1px solid #d6dce7;border-radius:10px;background:#fff;color:#17233d;font:inherit;font-weight:400}
+.role-class-list{display:grid;gap:12px;padding-top:16px}
+.role-class-card{border:1px solid #e5e9f1;border-radius:13px;padding:14px;min-width:0}
+.role-class-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.role-class-heading>div{display:grid;gap:5px;min-width:0}
+.role-class-heading b{font-size:14px;color:#17233d;overflow-wrap:anywhere}
+.role-class-heading small{font-size:11px;color:#6a7589}
+.role-enroll-form{display:flex;align-items:center;gap:9px;margin-top:13px}
+.role-enroll-form>label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;color:#667187}
+.role-enroll-form input{padding:10px 11px}
+.role-class-create button:disabled,.role-enroll-form button:disabled{opacity:.55;cursor:wait}
+@media(max-width:760px){.role-class-create{grid-template-columns:1fr 1fr}.role-class-create button{width:100%}.role-enroll-form{align-items:stretch;flex-direction:column}.role-enroll-form button{width:100%}.role-class-heading{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:440px){.role-class-create{grid-template-columns:1fr}.role-class-heading .role-status{white-space:normal}}
