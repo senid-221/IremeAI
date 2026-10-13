@@ -119,7 +119,7 @@ export default function AssessmentWorkspace({ lang, signedIn, onSignIn }: { lang
       const publishResponse = await fetch('/api/assessments/' + encodeURIComponent(payload.assessment.id) + '/publish', { method: 'POST', credentials: 'same-origin' })
       const publishPayload = await publishResponse.json().catch(() => ({}))
       if (!publishResponse.ok) {
-        setNotice(rw ? 'Ikizamini cyabitswe nka draft, ariko nticyatangajwe. Reba uburenganzira bwa konti.' : 'Assessment saved as a draft, but it could not be published. Check your account permissions.')
+        setNotice((rw ? 'Ikizamini cyabitswe nka draft, ariko nticyatangajwe. ' : 'Assessment saved as a draft, but it could not be published. ') + (typeof publishPayload?.error === 'string' ? publishPayload.error : (rw ? 'Reba uburenganzira bwa konti.' : 'Check your account permissions.')))
       } else {
         setNotice(rw ? 'Ikizamini cyashyizweho kandi kiragaragara ku banyeshuri.' : 'Assessment created and published for learners.')
         setTitle('')
