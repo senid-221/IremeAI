@@ -86,6 +86,84 @@ app.get('/api/education/search', async (req, res) => {
     return res.status(500).json({ error: 'Could not search the education knowledge base.' })
   }
 })
+// School/classroom management built on the existing classes and class_memberships tables.
+app.get('/api/classes', requireRole('teacher', 'school_admin', 'platform_admin'), async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const actor = await pool.query('SELECT school_id FROM users WHERE id = $1 LIMIT 1', [req.session.userId])
+    const schoolId = actor.rows[0]?.school_id || null
+    const result = await pool.query(`SELECT c.id, c.name, c.grade_level, c.academic_year, s.name AS school_name,
+      count(DISTINCT cm_student.user_id)::int AS student_count,
+      count(DISTINCT cm_teacher.user_id)::int AS teacher_count
+      FROM classes c JOIN schools s ON s.id = c.school_id
+      LEFT JOIN class_memberships cm_student ON cm_student.class_id = c.id AND cm_student.membership_role = 'student'
+      LEFT JOIN class_memberships cm_teacher ON cm_teacher.class_id = c.id AND cm_teacher.membership_role = 'teacher'
+      WHERE ($1::boolean OR c.school_id = $2)
+        AND ($3::boolean OR EXISTS (SELECT 1 FROM class_memberships own WHERE own.class_id = c.id AND own.user_id = $4 AND own.membership_role = 'teacher'))
+      GROUP BY c.id, s.name ORDER BY c.academic_year DESC, c.grade_level, c.name LIMIT 200`,
+      [req.session.role === 'platform_admin', schoolId, req.session.role !== 'teacher', req.session.userId])
+    return res.json({ classes: result.rows })
+  } catch (error) {
+    console.error('Class list failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not load classes.' })
+  }
+})
+
+app.post('/api/classes', requireRole('teacher', 'school_admin', 'platform_admin'), async (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 120) : ''
+  const gradeLevel = typeof req.body?.gradeLevel === 'string' ? req.body.gradeLevel.trim().slice(0, 60) : ''
+  const year = Number(req.body?.academicYear)
+  if (name.length < 2 || !gradeLevel || !Number.isInteger(year) || year < 2020 || year > 2100) return res.status(400).json({ error: 'Provide a class name, grade level and valid academic year.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const actor = await pool.query('SELECT school_id FROM users WHERE id = $1 LIMIT 1', [req.session.userId])
+    let schoolId = actor.rows[0]?.school_id || null
+    if (req.session.role === 'platform_admin' && typeof req.body?.schoolId === 'string') {
+      const requested = await pool.query('SELECT id FROM schools WHERE id = $1 LIMIT 1', [req.body.schoolId])
+      if (!requested.rowCount) return res.status(400).json({ error: 'Choose a valid school.' })
+      schoolId = requested.rows[0].id
+    }
+    if (!schoolId) return res.status(400).json({ error: 'Your account must be linked to a school before creating classes.' })
+    const created = await pool.query('INSERT INTO classes(school_id, name, grade_level, academic_year) VALUES($1,$2,$3,$4) RETURNING id, name, grade_level, academic_year', [schoolId, name, gradeLevel, year])
+    if (req.session.role === 'teacher') await pool.query("INSERT INTO class_memberships(class_id, user_id, membership_role) VALUES($1,$2,'teacher') ON CONFLICT DO NOTHING", [created.rows[0].id, req.session.userId])
+    return res.status(201).json({ class: created.rows[0] })
+  } catch (error) {
+    if (error?.code === '23505') return res.status(409).json({ error: 'A class with this name already exists for that academic year.' })
+    console.error('Class create failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not create class.' })
+  }
+})
+
+app.post('/api/classes/:id/students', requireRole('teacher', 'school_admin', 'platform_admin'), async (req, res) => {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+  if (!uuidPattern.test(req.params.id) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ error: 'Provide a valid class and student email.' })
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const actor = await pool.query('SELECT school_id, role FROM users WHERE id = $1 LIMIT 1', [req.session.userId])
+    const schoolId = actor.rows[0]?.school_id || null
+    const classResult = await pool.query('SELECT id, school_id FROM classes WHERE id = $1 LIMIT 1', [req.params.id])
+    if (!classResult.rowCount) return res.status(404).json({ error: 'Class not found.' })
+    const classroom = classResult.rows[0]
+    if (req.session.role !== 'platform_admin' && (!schoolId || schoolId !== classroom.school_id)) return res.status(403).json({ error: 'You can only manage classes in your school.' })
+    if (req.session.role === 'teacher') {
+      const membership = await pool.query("SELECT 1 FROM class_memberships WHERE class_id = $1 AND user_id = $2 AND membership_role = 'teacher' LIMIT 1", [classroom.id, req.session.userId])
+      if (!membership.rowCount) return res.status(403).json({ error: 'You must be assigned to this class to add learners.' })
+    }
+    const student = await pool.query("SELECT id, school_id FROM users WHERE email = $1 AND role = 'student' AND status = 'active' LIMIT 1", [email])
+    if (!student.rowCount) return res.status(404).json({ error: 'No active student account matches that email.' })
+    if (student.rows[0].school_id !== classroom.school_id) return res.status(400).json({ error: 'The student must belong to the same school as this class.' })
+    await pool.query("INSERT INTO class_memberships(class_id, user_id, membership_role) VALUES($1,$2,'student') ON CONFLICT DO NOTHING", [classroom.id, student.rows[0].id])
+    return res.status(201).json({ message: 'Student added to class.' })
+  } catch (error) {
+    console.error('Student enrollment failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not add this student to the class.' })
+  }
+})
+
 app.get('/api/teacher/overview', requireRole('teacher', 'school_admin', 'platform_admin'), async (req, res) => {
   const pool = req.app.locals.authPool
   if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
