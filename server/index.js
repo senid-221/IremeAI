@@ -86,12 +86,45 @@ app.get('/api/education/search', async (req, res) => {
     return res.status(500).json({ error: 'Could not search the education knowledge base.' })
   }
 })
-app.get('/api/teacher/overview', requireRole('teacher', 'school_admin', 'platform_admin'), (_req, res) => {
-  res.json({ portal: 'teacher', message: 'Teacher access verified. Classroom tools are the next implementation step.' })
+app.get('/api/teacher/overview', requireRole('teacher', 'school_admin', 'platform_admin'), async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const isPlatform = req.session.role === 'platform_admin'
+    const params = isPlatform ? [] : [req.session.userId]
+    const ownership = isPlatform ? 'true' : 'a.created_by = $1'
+    const [assessmentStats, recentResults] = await Promise.all([
+      pool.query(`SELECT count(*)::int AS total, count(*) FILTER (WHERE a.is_published)::int AS published, count(*) FILTER (WHERE NOT a.is_published)::int AS drafts, count(DISTINCT t.id)::int AS attempts FROM assessments a LEFT JOIN assessment_attempts t ON t.assessment_id = a.id WHERE ${ownership}`, params),
+      pool.query(`SELECT t.id, a.title AS assessment_title, u.full_name AS learner_name, t.score, t.max_score, CASE WHEN t.max_score > 0 THEN round(t.score / t.max_score * 100, 1) ELSE 0 END AS percentage, t.submitted_at FROM assessment_attempts t JOIN assessments a ON a.id = t.assessment_id JOIN users u ON u.id = t.student_id WHERE t.status = 'submitted' AND ${ownership} ORDER BY t.submitted_at DESC LIMIT 12`, params),
+    ])
+    const assessments = await pool.query(`SELECT a.id, a.title, a.grade_level, a.is_published, a.created_at, count(DISTINCT q.id)::int AS question_count, count(DISTINCT t.id)::int AS attempts FROM assessments a LEFT JOIN assessment_questions q ON q.assessment_id = a.id LEFT JOIN assessment_attempts t ON t.assessment_id = a.id WHERE ${ownership} GROUP BY a.id ORDER BY a.created_at DESC LIMIT 20`, params)
+    return res.json({ portal: 'teacher', stats: assessmentStats.rows[0], recentResults: recentResults.rows, assessments: assessments.rows })
+  } catch (error) {
+    console.error('Teacher overview failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not load teacher overview.' })
+  }
 })
 
-app.get('/api/admin/overview', requireRole('school_admin', 'platform_admin'), (_req, res) => {
-  res.json({ portal: 'admin', message: 'Administrator access verified. School management tools are the next implementation step.' })
+app.get('/api/admin/overview', requireRole('school_admin', 'platform_admin'), async (req, res) => {
+  const pool = req.app.locals.authPool
+  if (!pool) return res.status(503).json({ error: 'Account services are not configured.' })
+  try {
+    const result = await pool.query(`SELECT
+      (SELECT count(*)::int FROM schools WHERE ($1::boolean OR id = $2)) AS schools,
+      (SELECT count(*)::int FROM users WHERE ($1::boolean OR school_id = $2) AND role = 'student' AND status = 'active') AS students,
+      (SELECT count(*)::int FROM users WHERE ($1::boolean OR school_id = $2) AND role = 'teacher' AND status = 'active') AS teachers,
+      (SELECT count(*)::int FROM classes WHERE ($1::boolean OR school_id = $2)) AS classes,
+      (SELECT count(*)::int FROM learning_resources r LEFT JOIN users u ON u.id = r.created_by WHERE ($1::boolean OR u.school_id = $2) AND r.is_published = true) AS published_resources,
+      (SELECT count(*)::int FROM assessments a LEFT JOIN users u ON u.id = a.created_by WHERE ($1::boolean OR u.school_id = $2)) AS assessments,
+      (SELECT count(*)::int FROM assessment_attempts t JOIN assessments a ON a.id = t.assessment_id LEFT JOIN users u ON u.id = a.created_by WHERE ($1::boolean OR u.school_id = $2) AND t.status = 'submitted') AS submitted_attempts,
+      (SELECT count(*)::int FROM assignment_submissions s JOIN assignments a ON a.id = s.assignment_id LEFT JOIN users u ON u.id = a.created_by WHERE ($1::boolean OR u.school_id = $2) AND s.status = 'submitted') AS pending_submissions`,
+      [req.session.role === 'platform_admin', req.session.schoolId || null])
+    const recentResults = await pool.query(`SELECT a.title AS assessment_title, u.full_name AS learner_name, t.score, t.max_score, CASE WHEN t.max_score > 0 THEN round(t.score / t.max_score * 100, 1) ELSE 0 END AS percentage, t.submitted_at FROM assessment_attempts t JOIN assessments a ON a.id = t.assessment_id JOIN users u ON u.id = t.student_id JOIN users owner ON owner.id = a.created_by WHERE t.status = 'submitted' AND ($1::boolean OR owner.school_id = $2) ORDER BY t.submitted_at DESC LIMIT 12`, [req.session.role === 'platform_admin', req.session.schoolId || null])
+    return res.json({ portal: 'admin', stats: result.rows[0], recentResults: recentResults.rows })
+  } catch (error) {
+    console.error('Admin overview failed:', error?.message || 'unknown error')
+    return res.status(500).json({ error: 'Could not load administrator overview.' })
+  }
 })
 
 
